@@ -23,8 +23,16 @@ public sealed class MouseHook
     {
         if (_hookExSafeHandle.IsClosed)
             return;
-        if (!CsWin32.PInvoke.UnhookWindowsHookEx(new HHOOK(_hookExSafeHandle.DangerousGetHandle())))
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "MouseHook uninstall failed.");
+
+        unsafe
+        {
+            // 使用转换将 IntPtr 转为 void*
+            var hookHandlePtr = _hookExSafeHandle.DangerousGetHandle().ToPointer();
+
+            if (!CsWin32.PInvoke.UnhookWindowsHookEx(new HHOOK(hookHandlePtr)))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "MouseHook uninstall failed.");
+        }
+
         _hookExSafeHandle = new CsWin32.UnhookWindowsHookExSafeHandle(IntPtr.Zero);
     }
 
