@@ -35,7 +35,7 @@ public sealed class Window
     public static Rect? GetRect(IntPtr intPtrHandle)
     {
         var hWnd = intPtrHandle.ToHWnd();
-        if (hWnd == IntPtr.Zero || hWnd.IsNull) return null;
+        if (hWnd == IntPtr.Zero || hWnd.IsNull()) return null;
         if (CsWin32.PInvoke.GetWindowRect(hWnd, out var rect)) return Mapper.Map<RECT, Rect>(rect);
         return null;
     }
@@ -48,7 +48,7 @@ public sealed class Window
     public static Rectangle? GetRectangle(IntPtr intPtrHandle)
     {
         var hWnd = intPtrHandle.ToHWnd();
-        if (hWnd == IntPtr.Zero || hWnd.IsNull) return null;
+        if (hWnd == IntPtr.Zero || hWnd.IsNull()) return null;
         if (CsWin32.PInvoke.GetWindowRect(hWnd, out var rect))
             return new Rectangle(rect.left, rect.top, rect.Width, rect.Height);
         return null;
@@ -63,7 +63,7 @@ public sealed class Window
     public static bool Show(IntPtr intPtrHandle, ShowWindowCommand showWindowCommand)
     {
         var hWnd = intPtrHandle.ToHWnd();
-        if (hWnd == IntPtr.Zero || hWnd.IsNull) return false;
+        if (hWnd == IntPtr.Zero || hWnd.IsNull()) return false;
         var showCmdIndex = (int)showWindowCommand;
         return CsWin32.PInvoke.ShowWindow(hWnd, (SHOW_WINDOW_CMD)showCmdIndex);
     }
@@ -83,11 +83,16 @@ public sealed class Window
         SetWindowPosFlags setWindowPosFlags)
     {
         var hWnd = intPtrHandle.ToHWnd();
-        if (hWnd == IntPtr.Zero || hWnd.IsNull) return false;
-        var windowHandlesIndex = (int)windowHandles;
-        var setWindowPosFlagsIndex = (int)setWindowPosFlags;
-        return CsWin32.PInvoke.SetWindowPos(hWnd, new HWND(windowHandlesIndex), x, y, cx, cy,
-            (SET_WINDOW_POS_FLAGS)setWindowPosFlagsIndex);
+        if (hWnd == IntPtr.Zero || hWnd.IsNull()) return false;
+        var windowHandlesHwnd = (HWND)(IntPtr)windowHandles;
+        return CsWin32.PInvoke.SetWindowPos(
+            hWnd,
+            windowHandlesHwnd,
+            x,
+            y,
+            cx,
+            cy,
+            (SET_WINDOW_POS_FLAGS)setWindowPosFlags);
     }
 
     /// <summary>
@@ -99,7 +104,7 @@ public sealed class Window
     public static IntPtr GetLong(IntPtr intPtrHandle, WindowLongPtrIndex windowLongPtr)
     {
         var hWnd = intPtrHandle.ToHWnd();
-        if (hWnd == IntPtr.Zero || hWnd.IsNull) return IntPtr.Zero;
+        if (hWnd == IntPtr.Zero || hWnd.IsNull()) return IntPtr.Zero;
         var longPtrIndex = (int)windowLongPtr;
         return CsWin32.PInvoke.GetWindowLong(hWnd, (WINDOW_LONG_PTR_INDEX)longPtrIndex);
     }
@@ -114,7 +119,7 @@ public sealed class Window
     public static IntPtr SetLong(IntPtr intPtrHandle, WindowLongPtrIndex windowLongPtr, int dwNewLong)
     {
         var hWnd = intPtrHandle.ToHWnd();
-        if (hWnd == IntPtr.Zero || hWnd.IsNull) return IntPtr.Zero;
+        if (hWnd == IntPtr.Zero || hWnd.IsNull()) return IntPtr.Zero;
         var longPtrIndex = (int)windowLongPtr;
         return CsWin32.PInvoke.SetWindowLong(hWnd, (WINDOW_LONG_PTR_INDEX)longPtrIndex, dwNewLong);
     }
@@ -132,7 +137,7 @@ public sealed class Window
     {
         if (hWndChildAfter.HasValue)
             CsWin32.PInvoke.FindWindowEx(hWndParent.ToHWnd(), hWndChildAfter.Value.ToHWnd(), lpszClass, lpszWindow);
-        return CsWin32.PInvoke.FindWindowEx(hWndParent.ToHWnd(), HWND.Null, lpszClass, lpszWindow);
+        return CsWin32.PInvoke.FindWindowEx(hWndParent.ToHWnd(), default(HWND), lpszClass, lpszWindow);
     }
 
     /// <summary>
@@ -143,7 +148,7 @@ public sealed class Window
     public static Rectangle? GetExtendedFrameBounds(IntPtr intPtrHandle)
     {
         var hWnd = intPtrHandle.ToHWnd();
-        if (hWnd == IntPtr.Zero || hWnd.IsNull) return null;
+        if (hWnd == IntPtr.Zero || hWnd.IsNull()) return null;
         var extendedFrameBounds = new RECT();
         unsafe
         {
@@ -174,7 +179,7 @@ public sealed class Window
     public static IntPtr GetProcessId(IntPtr intPtrHandle)
     {
         var hWnd = intPtrHandle.ToHWnd();
-        if (hWnd == IntPtr.Zero || hWnd.IsNull) return IntPtr.Zero;
+        if (hWnd == IntPtr.Zero || hWnd.IsNull()) return IntPtr.Zero;
         uint processId = 0;
         unsafe
         {
@@ -192,7 +197,7 @@ public sealed class Window
     public static string GetClassName(IntPtr intPtrHandle)
     {
         var hWnd = intPtrHandle.ToHWnd();
-        if (hWnd == IntPtr.Zero || hWnd.IsNull) return string.Empty;
+        if (hWnd == IntPtr.Zero || hWnd.IsNull()) return string.Empty;
         var nMaxCount = 256;
         unsafe
         {
@@ -208,6 +213,6 @@ public sealed class Window
     private static IntPtr GetTopWindowHandle(IntPtr hWnd)
     {
         var parentHandle = CsWin32.PInvoke.GetParent(hWnd.ToHWnd());
-        return parentHandle == HWND.Null ? hWnd : GetTopWindowHandle(parentHandle);
+        return parentHandle == default ? hWnd : GetTopWindowHandle(parentHandle);
     }
 }

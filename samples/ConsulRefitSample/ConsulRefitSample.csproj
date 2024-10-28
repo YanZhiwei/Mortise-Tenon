@@ -10,7 +10,7 @@
     <PackageReference Include="Consul" Version="1.7.14.4" />
     <PackageReference Include="Refit" Version="7.2.1" />
     <PackageReference Include="Refit.HttpClientFactory" Version="7.2.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.8.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
 
   <ItemGroup>

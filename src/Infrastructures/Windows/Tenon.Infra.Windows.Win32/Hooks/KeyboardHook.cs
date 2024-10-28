@@ -23,8 +23,16 @@ public sealed class KeyboardHook
     {
         if (_hookExSafeHandle.IsClosed)
             return;
-        if (!CsWin32.PInvoke.UnhookWindowsHookEx(new HHOOK(_hookExSafeHandle.DangerousGetHandle())))
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "KeyboardHook uninstall failed.");
+
+        unsafe
+        {
+            // 使用 Unsafe.AsPointer 将 IntPtr 转换为 void*
+            void* hookHandlePtr = (void*)_hookExSafeHandle.DangerousGetHandle();
+
+            if (!CsWin32.PInvoke.UnhookWindowsHookEx(new HHOOK(hookHandlePtr)))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "KeyboardHook uninstall failed.");
+        }
+
         _hookExSafeHandle = new CsWin32.UnhookWindowsHookExSafeHandle(IntPtr.Zero);
     }
 

@@ -6,6 +6,6 @@ internal static class IntPtrExtension
 {
     public static HWND ToHWnd(this IntPtr intPtrHandle)
     {
-        return intPtrHandle == IntPtr.Zero ? HWND.Null : new HWND(intPtrHandle);
+        return intPtrHandle == IntPtr.Zero ? default : (HWND)intPtrHandle;
     }
 }
