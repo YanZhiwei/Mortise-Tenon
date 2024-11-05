@@ -14,4 +14,13 @@ public static class FluentValidationExtension
             .NotEmpty()
             .WithMessage("{PropertyName} is required");
     }
+
+    public static IRuleBuilderOptions<T, string> FileName<T>(this IRuleBuilder<T, string> ruleBuilder)
+    {
+        return ruleBuilder
+            .NotNull().WithMessage("{PropertyName} cannot be null")
+            .NotEmpty().WithMessage("{PropertyName} cannot be empty")
+            .Length(1, 255).WithMessage("{PropertyName} must be between 1 and 255 characters long")
+            .Matches(@"^[^\\/:*?""<>|]+$").WithMessage("{PropertyName} contains invalid characters");
+    }
 }
