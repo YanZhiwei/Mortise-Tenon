@@ -5,9 +5,9 @@ namespace Tenon.AspNetCore.Abstractions.Application;
 
 public abstract class ServiceBase
 {
-    protected ServiceResult ServiceResult()
+    protected static ServiceResult CreateServiceResult()
     {
-        return new ServiceResult();
+        return ServiceResult.Success;
     }
 
     protected ProblemDetails Problem(HttpStatusCode? statusCode = null, string? detail = null, string? title = null,
