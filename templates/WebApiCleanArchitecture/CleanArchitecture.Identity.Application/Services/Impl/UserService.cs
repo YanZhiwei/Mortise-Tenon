@@ -132,7 +132,7 @@ public sealed class UserService : ServiceBase, IUserService
         var user = _mapper.Map<User>(input);
         user.Id = id;
         await _userManager.UpdateAsync(user);
-        return ServiceResult();
+        return CreateServiceResult();
     }
 
     public async Task<ServiceResult> DeleteAsync(long id)
@@ -141,7 +141,7 @@ public sealed class UserService : ServiceBase, IUserService
         if (existUser == null)
             return Problem(HttpStatusCode.BadRequest, $"UserId:{id} is not exist");
         await _userManager.DeleteAsync(existUser);
-        return ServiceResult();
+        return CreateServiceResult();
     }
 
     public async Task<PagedResultDto<UserDto>> GetPagedAsync(UserSearchPagedDto search)
