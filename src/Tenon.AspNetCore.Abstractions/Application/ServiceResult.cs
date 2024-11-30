@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace Tenon.AspNetCore.Abstractions.Application;
 
@@ -14,6 +15,7 @@ public sealed class ServiceResult
     {
     }
 
+    public static ServiceResult Success { get; } = new();
     public long Timestamp { get; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     public ProblemDetails? ProblemDetails { get; set; }
 
@@ -26,6 +28,49 @@ public sealed class ServiceResult
             ProblemDetails = problemDetails
         };
     }
+
+    public static ServiceResult Error(HttpStatusCode statusCode, string title, string? detail = null)
+    {
+        var problem = new ProblemDetails
+        {
+            Status = (int)statusCode,
+            Title = title,
+            Detail = detail
+        };
+        return new ServiceResult(problem);
+    }
+
+    public static ServiceResult<T> Error<T>(HttpStatusCode statusCode, string title, string? detail = null)
+    {
+        var problem = new ProblemDetails
+        {
+            Status = (int)statusCode,
+            Title = title,
+            Detail = detail
+        };
+        return new ServiceResult<T>(problem);
+    }
+
+    public static ServiceResult NotFound(string title, string? detail = null)
+        => Error(HttpStatusCode.NotFound, title, detail);
+
+    public static ServiceResult BadRequest(string title, string? detail = null)
+        => Error(HttpStatusCode.BadRequest, title, detail);
+
+    public static ServiceResult Conflict(string title, string? detail = null)
+        => Error(HttpStatusCode.Conflict, title, detail);
+
+    public static ServiceResult<T> SuccessResult<T>(T value) => new(value);
+    public static ServiceResult<T> Empty<T>() => new();
+
+    public static ServiceResult<T> NotFound<T>(string title, string? detail = null)
+        => Error<T>(HttpStatusCode.NotFound, title, detail);
+
+    public static ServiceResult<T> BadRequest<T>(string title, string? detail = null)
+        => Error<T>(HttpStatusCode.BadRequest, title, detail);
+
+    public static ServiceResult<T> Conflict<T>(string title, string? detail = null)
+        => Error<T>(HttpStatusCode.Conflict, title, detail);
 }
 
 [Serializable]
