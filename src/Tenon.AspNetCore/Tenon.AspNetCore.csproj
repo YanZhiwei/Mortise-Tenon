@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Abstractions\Tenon.Abstractions\Tenon.Abstractions.csproj" />
+    <ProjectReference Include="..\Abstractions\Tenon.Serialization.Abstractions\Tenon.Serialization.Abstractions.csproj" />
     <ProjectReference Include="..\Extensions\Tenon.Extensions\Tenon.Extensions.csproj" />
     <ProjectReference Include="..\Tenon.AspNetCore.Abstractions\Tenon.AspNetCore.Abstractions.csproj" />
   </ItemGroup>

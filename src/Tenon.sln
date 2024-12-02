@@ -181,6 +181,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediatREventBusSample", "..
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tenon.Infra.Windows.Win32Tests", "..\test\Tenon.Infra.Windows.Win32Tests\Tenon.Infra.Windows.Win32Tests.csproj", "{BCDB344F-419E-4813-85C2-7411C8ED8A13}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tenon.AspNetCore.OpenApi.Extensions", "Extensions\Tenon.AspNetCore.OpenApi.Extensions\Tenon.AspNetCore.OpenApi.Extensions.csproj", "{2AC0E9FD-FF04-4A6B-B300-048C3BDA2BBF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -479,6 +481,10 @@ Global
 		{BCDB344F-419E-4813-85C2-7411C8ED8A13}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BCDB344F-419E-4813-85C2-7411C8ED8A13}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BCDB344F-419E-4813-85C2-7411C8ED8A13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AC0E9FD-FF04-4A6B-B300-048C3BDA2BBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AC0E9FD-FF04-4A6B-B300-048C3BDA2BBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AC0E9FD-FF04-4A6B-B300-048C3BDA2BBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AC0E9FD-FF04-4A6B-B300-048C3BDA2BBF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -542,6 +548,7 @@ Global
 		{E2614310-FB98-48FD-8D21-241305F37886} = {8F47DBC9-9B92-4C83-B058-EA0EF909FAA9}
 		{24EE0C4B-AFCF-40AC-B7C4-EBAAA2216127} = {76FD4AE7-DA80-4244-8A1A-784DD49F9894}
 		{BCDB344F-419E-4813-85C2-7411C8ED8A13} = {E105A163-9660-4A89-8CA9-C242762B8613}
+		{2AC0E9FD-FF04-4A6B-B300-048C3BDA2BBF} = {8F47DBC9-9B92-4C83-B058-EA0EF909FAA9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BD20DE54-1131-41A3-9F1B-37B742A8FA09}
