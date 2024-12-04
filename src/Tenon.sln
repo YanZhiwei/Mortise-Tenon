@@ -183,6 +183,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tenon.Infra.Windows.Win32Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tenon.AspNetCore.OpenApi.Extensions", "Extensions\Tenon.AspNetCore.OpenApi.Extensions\Tenon.AspNetCore.OpenApi.Extensions.csproj", "{2AC0E9FD-FF04-4A6B-B300-048C3BDA2BBF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tenon.Serilog.AspNetCore.Extensions", "Extensions\Tenon.Serilog.AspNetCore.Extensions\Tenon.Serilog.AspNetCore.Extensions.csproj", "{BAB0C50C-96CB-46CA-A17F-3E148CED419B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tenon.AspNetCoreTests", "..\test\Tenon.AspNetCoreTests\Tenon.AspNetCoreTests.csproj", "{2F01A474-B29A-4196-A759-6AA12CED16DD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -485,6 +489,14 @@ Global
 		{2AC0E9FD-FF04-4A6B-B300-048C3BDA2BBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2AC0E9FD-FF04-4A6B-B300-048C3BDA2BBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2AC0E9FD-FF04-4A6B-B300-048C3BDA2BBF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAB0C50C-96CB-46CA-A17F-3E148CED419B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAB0C50C-96CB-46CA-A17F-3E148CED419B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAB0C50C-96CB-46CA-A17F-3E148CED419B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAB0C50C-96CB-46CA-A17F-3E148CED419B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F01A474-B29A-4196-A759-6AA12CED16DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F01A474-B29A-4196-A759-6AA12CED16DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F01A474-B29A-4196-A759-6AA12CED16DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F01A474-B29A-4196-A759-6AA12CED16DD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -549,6 +561,8 @@ Global
 		{24EE0C4B-AFCF-40AC-B7C4-EBAAA2216127} = {76FD4AE7-DA80-4244-8A1A-784DD49F9894}
 		{BCDB344F-419E-4813-85C2-7411C8ED8A13} = {E105A163-9660-4A89-8CA9-C242762B8613}
 		{2AC0E9FD-FF04-4A6B-B300-048C3BDA2BBF} = {8F47DBC9-9B92-4C83-B058-EA0EF909FAA9}
+		{BAB0C50C-96CB-46CA-A17F-3E148CED419B} = {8F47DBC9-9B92-4C83-B058-EA0EF909FAA9}
+		{2F01A474-B29A-4196-A759-6AA12CED16DD} = {E105A163-9660-4A89-8CA9-C242762B8613}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BD20DE54-1131-41A3-9F1B-37B742A8FA09}

@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\..\nuget.props"></Import>
+	<Import Project="..\..\common.props"></Import>
+	<Import Project="..\..\version.props"></Import>
+  <PropertyGroup>
+	  <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+  </ItemGroup>
+
+</Project>
