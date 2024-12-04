@@ -67,7 +67,7 @@ public sealed class UserService : ServiceBase, IUserService
 
     public async Task<ServiceResult<UserTokenInfoDto>> RefreshAccessTokenAsync(UserRefreshTokenDto input)
     {
-        var userClaims = _jwtOptions.GetClaimsFromRefreshToken(input.RefreshToken);
+        var userClaims = _jwtOptions.GetClaimsFromToken(input.RefreshToken);
         if (!(userClaims?.Any() ?? false))
             return Problem(HttpStatusCode.Forbidden);
 
