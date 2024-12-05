@@ -1,6 +1,0 @@
-@CleanArchitecture.Identity.Gateway_HostAddress = http://localhost:5100
-
-GET {{CleanArchitecture.Identity.Gateway_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

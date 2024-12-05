@@ -7,6 +7,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="新文件夹\**" />
+    <EmbeddedResource Remove="新文件夹\**" />
+    <None Remove="新文件夹\**" />
+  </ItemGroup>
 <ItemGroup>
 	<FrameworkReference Include="Microsoft.AspNetCore.App" />
 </ItemGroup>
@@ -22,6 +27,10 @@
     <ProjectReference Include="..\Abstractions\Tenon.Serialization.Abstractions\Tenon.Serialization.Abstractions.csproj" />
     <ProjectReference Include="..\Extensions\Tenon.Extensions\Tenon.Extensions.csproj" />
     <ProjectReference Include="..\Tenon.AspNetCore.Abstractions\Tenon.AspNetCore.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="DTOs\Inputs\" />
   </ItemGroup>
 
 </Project>
