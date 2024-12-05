@@ -41,7 +41,7 @@ public class GlobalExceptionMiddleware(
 
         var problemDetails = new ProblemDetails
         {
-            Title = "An error occurred while processing your request",
+            Title = "Server failure",
             Status = context.Response.StatusCode,
             Detail = exception.Message,
             Instance = context.Request.Path,
