@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<Import Project="..\..\nuget.props"></Import>
-	<Import Project="..\..\common9.props"></Import>
+	<Import Project="..\..\common.props"></Import>
 	<Import Project="..\..\version.props"></Import>
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
