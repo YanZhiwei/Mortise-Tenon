@@ -4,7 +4,7 @@ namespace Tenon.AspNetCore.Identity.Extensions
 {
     public static class IdentityResultExtension
     {
-        public static string GetErrorMessage(this IdentityResult result)
+        public static string GetErrorMessage(this IdentityResult? result)
         {
             if (result == null)
                 return string.Empty;

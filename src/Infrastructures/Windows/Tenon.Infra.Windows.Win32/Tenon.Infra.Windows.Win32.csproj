@@ -3,7 +3,7 @@
 	<Import Project="..\..\..\common.props"></Import>
 	<Import Project="..\..\..\version.props"></Import>
   <PropertyGroup>
-    <TargetFrameworks>net8.0-windows;net9.0-windows</TargetFrameworks>
+    <TargetFramework>net9.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
 	  <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>

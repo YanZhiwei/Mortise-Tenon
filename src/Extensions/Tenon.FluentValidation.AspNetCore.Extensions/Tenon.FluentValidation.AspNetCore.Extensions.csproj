@@ -3,7 +3,7 @@
 	<Import Project="..\..\common.props"></Import>
 	<Import Project="..\..\version.props"></Import>
   <PropertyGroup>
-	  <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+	  <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -11,8 +11,8 @@
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 	<ItemGroup>
-	  <PackageReference Include="FluentValidation" Version="11.10.0" />
+	  <PackageReference Include="FluentValidation" Version="11.11.0" />
 	  <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
-	  <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.10.0" />
+	  <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
 	</ItemGroup>
 </Project>
