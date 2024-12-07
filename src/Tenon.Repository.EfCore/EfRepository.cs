@@ -331,7 +331,7 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
     /// <param name="keyValue">主键值</param>
     /// <param name="navigationPropertyPath">导航属性路径</param>
     /// <param name="token">取消令牌</param>
-    public virtual async Task<TEntity?> GetAsync(long keyValue,
+    public virtual async Task<TEntity?> GetByKeyWithNavigationAsync(long keyValue,
         Expression<Func<TEntity, dynamic>>? navigationPropertyPath = null, CancellationToken token = default)
     {
         return await GetAsync(keyValue, navigationPropertyPath, true, token);

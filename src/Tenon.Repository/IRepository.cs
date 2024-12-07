@@ -86,6 +86,6 @@ public interface IRepository<TEntity, in TKey> where TEntity : IEntity<TKey>
     /// <summary>
     /// 异步根据主键和单个导航属性路径获取实体
     /// </summary>
-    Task<TEntity?> GetAsync(TKey keyValue, Expression<Func<TEntity, dynamic>>? navigationPropertyPath = null,
+    Task<TEntity?> GetByKeyWithNavigationAsync(TKey keyValue, Expression<Func<TEntity, dynamic>>? navigationPropertyPath = null,
         CancellationToken token = default);
 }
