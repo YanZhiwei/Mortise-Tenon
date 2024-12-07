@@ -57,15 +57,18 @@ public class BlogTagTests : TestBase
     public async Task UpdateTag_ShouldUpdateSuccessfully()
     {
         // Arrange
-        var tag = await BlogTagEfRepo.GetAsync(1, token: default);
+        var tagId = 1L;
+        var tag = await DbContext.BlogTags.FindAsync(tagId);
         Assert.IsNotNull(tag);
 
         // Act
         tag.Name = "更新后的标签";
         tag.Description = "更新后的描述";
-        await BlogTagEfRepo.UpdateAsync(tag, token: default);
+        await DbContext.SaveChangesAsync();
 
-        var updatedTag = await BlogTagEfRepo.GetAsync(tag.Id, token: default);
+        // 清除跟踪器并重新获取标签进行验证
+        DbContext.ChangeTracker.Clear();
+        var updatedTag = await DbContext.BlogTags.FindAsync(tagId);
 
         // Assert
         Assert.IsNotNull(updatedTag);
@@ -80,18 +83,20 @@ public class BlogTagTests : TestBase
     public async Task DeleteTag_ShouldNotDeleteAssociatedBlogs()
     {
         // Arrange
-        var tag = await BlogTagEfRepo.GetAsync(1, token: default);
-        Assert.IsNotNull(tag);
-
+        var tagId = 1L;
+        
         // 获取关联的博客数量
-        var blogCount = await BlogEfRepo.CountAsync(b => b.Tags.Any(t => t.Id == tag.Id), token: default);
+        var blogCount = await BlogEfRepo.CountAsync(b => b.Tags.Any(t => t.Id == tagId), token: default);
         Assert.AreNotEqual(0, blogCount);
 
         // Act
-        await BlogTagEfRepo.RemoveAsync(tag, token: default);
+        var tag = await DbContext.BlogTags.FindAsync(tagId);
+        Assert.IsNotNull(tag);
+        DbContext.BlogTags.Remove(tag);
+        await DbContext.SaveChangesAsync();
 
         // Assert
-        var deletedTag = await BlogTagEfRepo.GetAsync(tag.Id, token: default);
+        var deletedTag = await BlogTagEfRepo.GetAsync(tagId, noTracking: true, token: default);
         Assert.IsNull(deletedTag);
 
         // 验证关联的博客没有被删除

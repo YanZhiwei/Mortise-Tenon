@@ -1,14 +1,22 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Tenon.Repository.EfCore.Extensions;
+using Tenon.Repository.EfCore.Interceptors;
 using Tenon.Repository.EfCore.Tests.Entities;
 
 namespace Tenon.Repository.EfCore.Tests;
 
 /// <summary>
-/// 测试基类
+///     测试基类
 /// </summary>
 public abstract class TestBase
 {
+    protected ILogger<EfRepository<BlogComment>> BlogCommentLogger;
+    protected ILogger<EfRepository<Blog>> BlogLogger;
+    protected ILogger<EfRepository<BlogTag>> BlogTagLogger;
     protected BlogDbContext DbContext { get; private set; } = null!;
     protected EfRepository<Blog> BlogEfRepo { get; private set; } = null!;
     protected EfRepository<BlogTag> BlogTagEfRepo { get; private set; } = null!;
@@ -17,28 +25,86 @@ public abstract class TestBase
     [TestInitialize]
     public virtual void Setup()
     {
-        var options = new DbContextOptionsBuilder<BlogDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
+        var services = new ServiceCollection();
 
-        DbContext = new BlogDbContext(options);
-        BlogEfRepo = new EfRepository<Blog>(DbContext);
-        BlogTagEfRepo = new EfRepository<BlogTag>(DbContext);
-        BlogCommentEfRepo = new EfRepository<BlogComment>(DbContext);
+        // 构建配置
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", false, true)
+            .Build();
 
-        // 初始化测试数据
+        // 配置数据库
+        services.AddDbContext<BlogDbContext>(options =>
+            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+
+        // 配置日志
+        services.AddLogging(builder => builder.AddConsole());
+
+        // 注册 DbContext 作为基类
+        services.AddScoped<DbContext>(sp => sp.GetRequiredService<BlogDbContext>());
+
+        // 使用 AddEfCore 扩展方法注册仓储和 DbContext
+        services.AddEfCore<BlogDbContext, TestUnitOfWork>(
+            configuration.GetSection("Tenon:Repository"),
+            options => options.UseInMemoryDatabase(Guid.NewGuid().ToString()),
+            new[] {new BasicAuditableFieldsInterceptor()}
+        );
+
+
+        var serviceProvider = services.BuildServiceProvider();
+        InitializeServices(serviceProvider);
+        InitializeTestData();
+    }
+
+    /// <summary>
+    ///     初始化服务
+    /// </summary>
+    private void InitializeServices(IServiceProvider serviceProvider)
+    {
+        DbContext = serviceProvider.GetRequiredService<BlogDbContext>();
+        BlogLogger = serviceProvider.GetRequiredService<ILogger<EfRepository<Blog>>>();
+        BlogTagLogger = serviceProvider.GetRequiredService<ILogger<EfRepository<BlogTag>>>();
+        BlogCommentLogger = serviceProvider.GetRequiredService<ILogger<EfRepository<BlogComment>>>();
+        BlogEfRepo = serviceProvider.GetRequiredService<EfRepository<Blog>>();
+        BlogTagEfRepo = serviceProvider.GetRequiredService<EfRepository<BlogTag>>();
+        BlogCommentEfRepo = serviceProvider.GetRequiredService<EfRepository<BlogComment>>();
+    }
+
+    /// <summary>
+    ///     初始化测试数据
+    /// </summary>
+    private void InitializeTestData()
+    {
+        var tags = InitializeBlogTags();
+        var blogs = InitializeBlogs(tags);
+        var comments = InitializeBlogComments(blogs);
+        InitializeChildComments(blogs, comments);
+    }
+
+    /// <summary>
+    ///     初始化博客标签
+    /// </summary>
+    private List<BlogTag> InitializeBlogTags()
+    {
         var tags = new List<BlogTag>
         {
-            new BlogTag { Name = "技术", Description = "技术相关文章" },
-            new BlogTag { Name = "生活", Description = "生活随笔" },
-            new BlogTag { Name = "编程", Description = "编程技巧" }
+            new() {Name = "技术", Description = "技术相关文章"},
+            new() {Name = "生活", Description = "生活随笔"},
+            new() {Name = "编程", Description = "编程技巧"}
         };
         DbContext.BlogTags.AddRange(tags);
         DbContext.SaveChanges();
+        return tags;
+    }
 
+    /// <summary>
+    ///     初始化博客
+    /// </summary>
+    private List<Blog> InitializeBlogs(List<BlogTag> tags)
+    {
         var blogs = new List<Blog>
         {
-            new Blog
+            new()
             {
                 Title = "第一篇博客",
                 Content = "这是第一篇博客的内容",
@@ -46,9 +112,9 @@ public abstract class TestBase
                 PublishTime = DateTime.Now.AddDays(-5),
                 ReadCount = 100,
                 LikeCount = 10,
-                Tags = new List<BlogTag> { tags[0], tags[2] }
+                Tags = new List<BlogTag> {tags[0], tags[2]}
             },
-            new Blog
+            new()
             {
                 Title = "第二篇博客",
                 Content = "这是第二篇博客的内容",
@@ -56,9 +122,9 @@ public abstract class TestBase
                 PublishTime = DateTime.Now.AddDays(-3),
                 ReadCount = 200,
                 LikeCount = 20,
-                Tags = new List<BlogTag> { tags[1] }
+                Tags = new List<BlogTag> {tags[1]}
             },
-            new Blog
+            new()
             {
                 Title = "第三篇博客",
                 Content = "这是第三篇博客的内容",
@@ -66,15 +132,22 @@ public abstract class TestBase
                 PublishTime = DateTime.Now.AddDays(-1),
                 ReadCount = 150,
                 LikeCount = 15,
-                Tags = new List<BlogTag> { tags[0], tags[1], tags[2] }
+                Tags = new List<BlogTag> {tags[0], tags[1], tags[2]}
             }
         };
         DbContext.Blogs.AddRange(blogs);
         DbContext.SaveChanges();
+        return blogs;
+    }
 
+    /// <summary>
+    ///     初始化博客评论
+    /// </summary>
+    private List<BlogComment> InitializeBlogComments(List<Blog> blogs)
+    {
         var comments = new List<BlogComment>
         {
-            new BlogComment
+            new()
             {
                 BlogId = blogs[0].Id,
                 Content = "很好的文章！",
@@ -82,7 +155,7 @@ public abstract class TestBase
                 CommentTime = DateTime.Now.AddDays(-4),
                 LikeCount = 5
             },
-            new BlogComment
+            new()
             {
                 BlogId = blogs[0].Id,
                 Content = "学习了！",
@@ -90,7 +163,7 @@ public abstract class TestBase
                 CommentTime = DateTime.Now.AddDays(-4).AddHours(2),
                 LikeCount = 3
             },
-            new BlogComment
+            new()
             {
                 BlogId = blogs[1].Id,
                 Content = "写得不错！",
@@ -100,11 +173,18 @@ public abstract class TestBase
             }
         };
         DbContext.BlogComments.AddRange(comments);
+        DbContext.SaveChanges();
+        return comments;
+    }
 
-        // 添加子评论
+    /// <summary>
+    ///     初始化子评论
+    /// </summary>
+    private void InitializeChildComments(List<Blog> blogs, List<BlogComment> comments)
+    {
         var childComments = new List<BlogComment>
         {
-            new BlogComment
+            new()
             {
                 BlogId = blogs[0].Id,
                 Content = "回复@王五：谢谢支持！",
@@ -113,7 +193,7 @@ public abstract class TestBase
                 LikeCount = 2,
                 ParentId = comments[0].Id
             },
-            new BlogComment
+            new()
             {
                 BlogId = blogs[1].Id,
                 Content = "回复@王五：感谢评论！",
@@ -127,10 +207,11 @@ public abstract class TestBase
         DbContext.SaveChanges();
     }
 
+
     [TestCleanup]
     public virtual void Cleanup()
     {
         DbContext.Database.EnsureDeleted();
         DbContext.Dispose();
     }
-} 
+}
