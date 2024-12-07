@@ -10,7 +10,7 @@ using Tenon.Repository.EfCore.Transaction;
 
 namespace Tenon.Repository.EfCore.Sqlite.Extensions;
 
-public static class ServiceCollectionExtension
+public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddEfCoreSqlite<TDbContext>(this IServiceCollection services,
         IConfigurationSection sqliteSection, Action<SqliteDbContextOptionsBuilder>? sqliteOptionsAction = null,
