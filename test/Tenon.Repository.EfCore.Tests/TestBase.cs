@@ -1,8 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tenon.Repository.EfCore.Tests.Entities;
+using Tenon.Repository.EfCore.Extensions;
+using Tenon.Repository.EfCore.Interceptors;
+using Tenon.Repository.EfCore.Transaction;
 
 namespace Tenon.Repository.EfCore.Tests;
 
@@ -24,6 +29,12 @@ public abstract class TestBase
     {
         var services = new ServiceCollection();
 
+        // 构建配置
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
+
         // 配置数据库
         services.AddDbContext<BlogDbContext>(options =>
             options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
@@ -31,16 +42,39 @@ public abstract class TestBase
         // 配置日志
         services.AddLogging(builder => builder.AddConsole());
 
-        // 注册DbContext作为通用DbContext
+        // 注册 DbContext 作为基类
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<BlogDbContext>());
 
-        // 注册仓储
-        services.AddScoped<EfRepository<Blog>>();
-        services.AddScoped<EfRepository<BlogTag>>();
-        services.AddScoped<EfRepository<BlogComment>>();
-        services.AddScoped<IRepository<Blog, long>>(sp => sp.GetRequiredService<EfRepository<Blog>>());
-        services.AddScoped<IRepository<BlogTag, long>>(sp => sp.GetRequiredService<EfRepository<BlogTag>>());
-        services.AddScoped<IRepository<BlogComment, long>>(sp => sp.GetRequiredService<EfRepository<BlogComment>>());
+        // 使用 AddEfCore 扩展方法注册仓储和 DbContext
+        services.AddEfCore<BlogDbContext>(
+            configuration.GetSection("Tenon:Repository"),
+            optionsAction: options => options.UseInMemoryDatabase(Guid.NewGuid().ToString()),
+            interceptors: new[] { new BasicAuditableFieldsInterceptor() }
+        );
+
+        // 替换默认的 UnitOfWork 实现
+        services.Replace(ServiceDescriptor.Scoped<IUnitOfWork, TestUnitOfWork>());
+
+        // 移除所有 IEfRepository 和 IRepository 的注册
+        services.RemoveAll(typeof(IEfRepository<,>));
+        services.RemoveAll(typeof(IRepository<,>));
+
+        // 获取所有需要注册仓储的实体类型
+        var entityTypes = new[] { typeof(Blog), typeof(BlogTag), typeof(BlogComment) };
+
+        foreach (var entityType in entityTypes)
+        {
+            // 注册具体的仓储实现
+            var repositoryType = typeof(EfRepository<>).MakeGenericType(entityType);
+            services.AddScoped(repositoryType);
+
+            // 注册接口映射
+            var repositoryInterfaceType = typeof(IRepository<,>).MakeGenericType(entityType, typeof(long));
+            var efRepositoryInterfaceType = typeof(IEfRepository<,>).MakeGenericType(entityType, typeof(long));
+
+            services.AddScoped(repositoryInterfaceType, sp => sp.GetRequiredService(repositoryType));
+            services.AddScoped(efRepositoryInterfaceType, sp => sp.GetRequiredService(repositoryType));
+        }
 
         var serviceProvider = services.BuildServiceProvider();
         InitializeServices(serviceProvider);
