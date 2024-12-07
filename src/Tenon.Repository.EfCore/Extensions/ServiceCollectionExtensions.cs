@@ -1,8 +1,8 @@
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Tenon.Repository.EfCore.Configurations;
 using Tenon.Repository.EfCore.Interceptors;
 using Tenon.Repository.EfCore.Transaction;
@@ -17,16 +17,15 @@ public static class ServiceCollectionExtensions
     /// <summary>
     ///     添加 EF Core 配置
     /// </summary>
-    /// <param name="services">服务集合</param>
-    /// <param name="dbSection">数据库配置节</param>
-    /// <param name="optionsAction">数据库选项配置</param>
-    /// <param name="interceptors">拦截器数组</param>
     /// <typeparam name="TDbContext">数据库上下文类型</typeparam>
-    public static IServiceCollection AddEfCore<TDbContext>(this IServiceCollection services,
+    /// <typeparam name="TUnitOfWork">工作单元类型</typeparam>
+    public static IServiceCollection AddEfCore<TDbContext, TUnitOfWork>(
+        this IServiceCollection services,
         IConfigurationSection dbSection,
         Action<DbContextOptionsBuilder> optionsAction,
         IInterceptor[]? interceptors = null)
         where TDbContext : DbContext
+        where TUnitOfWork : class, IUnitOfWork
     {
         var dbConfig = dbSection.Get<DbOptions>();
         if (dbConfig == null)
@@ -39,28 +38,15 @@ public static class ServiceCollectionExtensions
             optionsAction(options);
         });
 
-        // 注册 DbContext 作为基类
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<TDbContext>());
 
-        // 获取所有实体类型
-        var entityTypes = typeof(TDbContext).GetProperties()
-            .Where(p => p.PropertyType.IsGenericType && 
-                       p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>))
-            .Select(p => p.PropertyType.GetGenericArguments()[0])
-            .ToArray();
+        var entityTypes = GetEntityTypes(typeof(TDbContext).Assembly);
 
-        // 移除现有的仓储注册
-        services.RemoveAll(typeof(IEfRepository<,>));
-        services.RemoveAll(typeof(IRepository<,>));
-
-        // 为每个实体类型注册仓储
         foreach (var entityType in entityTypes)
         {
-            // 注册具体的仓储实现
             var repositoryType = typeof(EfRepository<>).MakeGenericType(entityType);
             services.AddScoped(repositoryType);
 
-            // 注册接口映射
             var repositoryInterfaceType = typeof(IRepository<,>).MakeGenericType(entityType, typeof(long));
             var efRepositoryInterfaceType = typeof(IEfRepository<,>).MakeGenericType(entityType, typeof(long));
 
@@ -68,9 +54,22 @@ public static class ServiceCollectionExtensions
             services.AddScoped(efRepositoryInterfaceType, sp => sp.GetRequiredService(repositoryType));
         }
 
-        // 注册通用服务
-        RegisterCommonServices(services);
+        services.AddScoped<IUnitOfWork, TUnitOfWork>();
+
         return services;
+    }
+
+    /// <summary>
+    ///     添加 EF Core 配置（使用默认 UnitOfWork）
+    /// </summary>
+    public static IServiceCollection AddEfCore<TDbContext>(
+        this IServiceCollection services,
+        IConfigurationSection dbSection,
+        Action<DbContextOptionsBuilder> optionsAction,
+        IInterceptor[]? interceptors = null)
+        where TDbContext : DbContext
+    {
+        return AddEfCore<TDbContext, UnitOfWork>(services, dbSection, optionsAction, interceptors);
     }
 
     /// <summary>
@@ -88,10 +87,17 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    ///     注册通用服务
+    ///     获取程序集中的所有实体类型
     /// </summary>
-    private static void RegisterCommonServices(IServiceCollection services)
+    /// <param name="assembly">程序集</param>
+    /// <returns>实体类型集合</returns>
+    private static Type[] GetEntityTypes(Assembly assembly)
     {
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        return assembly.GetTypes()
+            .Where(type =>
+                type is {IsAbstract: false, IsInterface: false} &&
+                Enumerable.Any(type.GetInterfaces(), i =>
+                        i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntity<>)))
+            .ToArray();
     }
 }

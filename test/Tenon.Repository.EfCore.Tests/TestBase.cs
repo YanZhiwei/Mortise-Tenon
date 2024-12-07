@@ -1,13 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Tenon.Repository.EfCore.Tests.Entities;
 using Tenon.Repository.EfCore.Extensions;
 using Tenon.Repository.EfCore.Interceptors;
-using Tenon.Repository.EfCore.Transaction;
+using Tenon.Repository.EfCore.Tests.Entities;
 
 namespace Tenon.Repository.EfCore.Tests;
 
@@ -32,7 +30,7 @@ public abstract class TestBase
         // 构建配置
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile("appsettings.json", false, true)
             .Build();
 
         // 配置数据库
@@ -46,14 +44,12 @@ public abstract class TestBase
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<BlogDbContext>());
 
         // 使用 AddEfCore 扩展方法注册仓储和 DbContext
-        services.AddEfCore<BlogDbContext>(
+        services.AddEfCore<BlogDbContext, TestUnitOfWork>(
             configuration.GetSection("Tenon:Repository"),
-            optionsAction: options => options.UseInMemoryDatabase(Guid.NewGuid().ToString()),
-            interceptors: new[] { new BasicAuditableFieldsInterceptor() }
+            options => options.UseInMemoryDatabase(Guid.NewGuid().ToString()),
+            new[] {new BasicAuditableFieldsInterceptor()}
         );
 
-        // 替换默认的 UnitOfWork 实现
-        services.Replace(ServiceDescriptor.Scoped<IUnitOfWork, TestUnitOfWork>());
 
         var serviceProvider = services.BuildServiceProvider();
         InitializeServices(serviceProvider);
