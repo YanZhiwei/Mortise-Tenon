@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tenon.Repository.EfCore.Tests.Entities;
-
+using Microsoft.Extensions.Logging;
 namespace Tenon.Repository.EfCore.Tests;
 
 /// <summary>
@@ -9,6 +9,9 @@ namespace Tenon.Repository.EfCore.Tests;
 /// </summary>
 public abstract class TestBase
 {
+    protected ILogger<EfRepository<Blog>> BlogLogger;
+    protected ILogger<EfRepository<BlogTag>> BlogTagLogger;
+    protected ILogger<EfRepository<BlogComment>> BlogCommentLogger;
     protected BlogDbContext DbContext { get; private set; } = null!;
     protected EfRepository<Blog> BlogEfRepo { get; private set; } = null!;
     protected EfRepository<BlogTag> BlogTagEfRepo { get; private set; } = null!;
@@ -21,10 +24,18 @@ public abstract class TestBase
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
+        var loggerFactory = LoggerFactory.Create(builder => // 创建日志工厂
+        {
+            builder.AddConsole(); // 可以根据需要添加其他日志提供程序
+        });
+
+        BlogLogger = loggerFactory.CreateLogger<EfRepository<Blog>>(); // 初始化日志
+        BlogTagLogger = loggerFactory.CreateLogger<EfRepository<BlogTag>>(); // 初始化日志
+        BlogCommentLogger = loggerFactory.CreateLogger<EfRepository<BlogComment>>(); // 初始化日志
         DbContext = new BlogDbContext(options);
-        BlogEfRepo = new EfRepository<Blog>(DbContext);
-        BlogTagEfRepo = new EfRepository<BlogTag>(DbContext);
-        BlogCommentEfRepo = new EfRepository<BlogComment>(DbContext);
+        BlogEfRepo = new EfRepository<Blog>(DbContext, BlogLogger);
+        BlogTagEfRepo = new EfRepository<BlogTag>(DbContext, BlogTagLogger);
+        BlogCommentEfRepo = new EfRepository<BlogComment>(DbContext, BlogCommentLogger);
 
         // 初始化测试数据
         var tags = new List<BlogTag>

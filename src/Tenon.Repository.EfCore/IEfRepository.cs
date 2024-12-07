@@ -34,7 +34,7 @@ public interface IEfRepository<TEntity, in TKey> where TEntity : IEntity<TKey>
     /// <param name="noTracking">是否不追踪</param>
     /// <param name="token">取消令牌</param>
     Task<TEntity?> GetWithNavigationPropertiesAsync(TKey keyValue,
-        IEnumerable<Expression<Func<TEntity, dynamic>>> navigationPropertyPaths = null, bool noTracking = true,
+        IEnumerable<Expression<Func<TEntity, dynamic>>>? navigationPropertyPaths = null, bool noTracking = true,
         CancellationToken token = default);
 
     /// <summary>
@@ -44,7 +44,7 @@ public interface IEfRepository<TEntity, in TKey> where TEntity : IEntity<TKey>
     /// <param name="navigationPropertyPath">导航属性路径</param>
     /// <param name="noTracking">是否不追踪</param>
     /// <param name="token">取消令牌</param>
-    Task<TEntity?> GetAsync(TKey keyValue, Expression<Func<TEntity, dynamic>> navigationPropertyPath = null,
+    Task<TEntity?> GetAsync(TKey keyValue, Expression<Func<TEntity, dynamic>>? navigationPropertyPath = null,
         bool noTracking = true, CancellationToken token = default);
 
     /// <summary>

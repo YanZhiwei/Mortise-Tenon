@@ -97,7 +97,7 @@ public class BlogCommentTests : TestBase
     public async Task UpdateComment_ShouldUpdateSuccessfully()
     {
         // Arrange
-        var comment = await BlogCommentEfRepo.GetAsync(1, token: default);
+        var comment = await BlogCommentEfRepo.GetAsync(1, noTracking: false, token: default);
         Assert.IsNotNull(comment);
 
         // Act
@@ -105,7 +105,8 @@ public class BlogCommentTests : TestBase
         comment.LikeCount += 1;
         await BlogCommentEfRepo.UpdateAsync(comment, token: default);
 
-        var updatedComment = await BlogCommentEfRepo.GetAsync(comment.Id, token: default);
+        // 重新获取评论进行验证（使用无跟踪查询）
+        var updatedComment = await BlogCommentEfRepo.GetAsync(comment.Id, noTracking: true, token: default);
 
         // Assert
         Assert.IsNotNull(updatedComment);

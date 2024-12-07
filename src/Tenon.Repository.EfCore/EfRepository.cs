@@ -1,14 +1,22 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Tenon.Extensions.Collection;
 using Tenon.Extensions.Expression;
 
 namespace Tenon.Repository.EfCore;
 
-public class EfRepository<TEntity>(DbContext dbContext) : IRepository<TEntity, long>, IEfRepository<TEntity, long>
+public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<TEntity, long>
     where TEntity : EfEntity, new()
 {
-    protected readonly DbContext DbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+    protected readonly DbContext DbContext;
+    private readonly ILogger<EfRepository<TEntity>> _logger;
+
+    public EfRepository(DbContext dbContext, ILogger<EfRepository<TEntity>> logger)
+    {
+        DbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _logger = logger;
+    }
 
     /// <summary>
     ///     根据条件查询
@@ -28,7 +36,7 @@ public class EfRepository<TEntity>(DbContext dbContext) : IRepository<TEntity, l
         bool noTracking = true, CancellationToken token = default)
     {
         var query = whereExpression != null ? GetDbSet(noTracking).Where(whereExpression) : GetDbSet(noTracking);
-        return await query.ToListAsync(token);
+        return await query.ToListAsync(token).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -40,7 +48,8 @@ public class EfRepository<TEntity>(DbContext dbContext) : IRepository<TEntity, l
     public virtual async Task<TEntity?> GetAsync(long keyValue, bool noTracking = true,
         CancellationToken token = default)
     {
-        return await GetAsync(keyValue, null, noTracking, token);
+        var query = GetDbSet(noTracking).Where(t => t.Id.Equals(keyValue));
+        return await query.FirstOrDefaultAsync(token).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -51,36 +60,33 @@ public class EfRepository<TEntity>(DbContext dbContext) : IRepository<TEntity, l
     /// <param name="noTracking">是否不追踪</param>
     /// <param name="token">取消令牌</param>
     public async Task<TEntity?> GetWithNavigationPropertiesAsync(long keyValue,
-        IEnumerable<Expression<Func<TEntity, dynamic>>> navigationPropertyPaths = null, bool noTracking = true,
+        IEnumerable<Expression<Func<TEntity, dynamic>>>? navigationPropertyPaths = null, bool noTracking = true,
         CancellationToken token = default)
     {
-        if (navigationPropertyPaths is null)
-            return await GetAsync(keyValue, null, noTracking, token);
-        if (navigationPropertyPaths.Count() == 1)
-            return await GetAsync(keyValue, navigationPropertyPaths.First(), noTracking, token);
         var query = GetDbSet(noTracking).Where(t => t.Id == keyValue);
-        foreach (var navigationPath in navigationPropertyPaths)
-            query = query.Include(navigationPath);
-        return await query.FirstOrDefaultAsync(token);
+        if (navigationPropertyPaths != null)
+        {
+            foreach (var navigationPath in navigationPropertyPaths)
+                query = query.Include(navigationPath);
+        }
+        return await query.FirstOrDefaultAsync(token).ConfigureAwait(false);
     }
 
-
     /// <summary>
-    ///     异步根据主键和单个导航属性获取实体
+    ///     根据主键和单个导航属性获取实体
     /// </summary>
     /// <param name="keyValue">主键值</param>
     /// <param name="navigationPropertyPath">导航属性路径</param>
     /// <param name="noTracking">是否不追踪</param>
     /// <param name="token">取消令牌</param>
-    public virtual async Task<TEntity?> GetAsync(long keyValue,
-        Expression<Func<TEntity, dynamic>> navigationPropertyPath = null, bool noTracking = true,
-        CancellationToken token = default)
+    public virtual async Task<TEntity?> GetAsync(long keyValue, Expression<Func<TEntity, dynamic>>? navigationPropertyPath = null,
+        bool noTracking = true, CancellationToken token = default)
     {
-        var query = GetDbSet(false).Where(t => t.Id.Equals(keyValue));
-        if (navigationPropertyPath is null)
-            return await query.FirstOrDefaultAsync(token);
-
-        return await query.Include(navigationPropertyPath).FirstOrDefaultAsync(token);
+        if (navigationPropertyPath != null)
+        {
+            return await GetWithNavigationPropertiesAsync(keyValue, new[] { navigationPropertyPath }, noTracking, token).ConfigureAwait(false);
+        }
+        return await GetAsync(keyValue, noTracking, token).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -92,17 +98,16 @@ public class EfRepository<TEntity>(DbContext dbContext) : IRepository<TEntity, l
         return GetDbSet(noTracking);
     }
 
-
     public virtual async Task<int> InsertAsync(TEntity entity, CancellationToken token = default)
     {
-        await DbContext.Set<TEntity>().AddAsync(entity, token);
-        return await DbContext.SaveChangesAsync(token);
+        await DbContext.Set<TEntity>().AddAsync(entity, token).ConfigureAwait(false);
+        return await DbContext.SaveChangesAsync(token).ConfigureAwait(false);
     }
 
     public virtual async Task<int> InsertAsync(IEnumerable<TEntity> entities, CancellationToken token = default)
     {
-        await DbContext.Set<TEntity>().AddRangeAsync(entities, token);
-        return await DbContext.SaveChangesAsync(token);
+        await DbContext.Set<TEntity>().AddRangeAsync(entities, token).ConfigureAwait(false);
+        return await DbContext.SaveChangesAsync(token).ConfigureAwait(false);
     }
 
     public virtual async Task<int> UpdateAsync(TEntity entity, CancellationToken token = default)
@@ -112,9 +117,9 @@ public class EfRepository<TEntity>(DbContext dbContext) : IRepository<TEntity, l
             throw new InvalidOperationException("Entity is not tracked, need to specify updated columns");
 
         if (entry.State is EntityState.Added or EntityState.Deleted)
-            throw new InvalidOperationException($"{nameof(entity)},The entity state is {nameof(entry.State)}");
+            throw new InvalidOperationException($"{nameof(entity)}, The entity state is {nameof(entry.State)}");
 
-        return await DbContext.SaveChangesAsync(token);
+        return await DbContext.SaveChangesAsync(token).ConfigureAwait(false);
     }
 
     public virtual async Task<int> UpdateAsync(IEnumerable<TEntity> entities, CancellationToken token = default)
@@ -131,7 +136,6 @@ public class EfRepository<TEntity>(DbContext dbContext) : IRepository<TEntity, l
 
         return await DbContext.SaveChangesAsync(token);
     }
-
 
     public virtual async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> whereExpression,
         CancellationToken token = default)
@@ -155,16 +159,17 @@ public class EfRepository<TEntity>(DbContext dbContext) : IRepository<TEntity, l
 
     public virtual async Task<int> RemoveAsync(long keyValue, CancellationToken token = default)
     {
-        var entity = DbContext.Set<TEntity>().AsNoTracking()
-                         .FirstOrDefault(t => t.Id.Equals(keyValue)) ??
-                     new TEntity {Id = keyValue};
+        var entity = await DbContext.Set<TEntity>().AsNoTracking()
+                         .FirstOrDefaultAsync(t => t.Id.Equals(keyValue), token).ConfigureAwait(false) ??
+                     new TEntity { Id = keyValue };
         DbContext.Remove(entity);
         try
         {
-            return await DbContext.SaveChangesAsync(token);
+            return await DbContext.SaveChangesAsync(token).ConfigureAwait(false);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateConcurrencyException ex)
         {
+            _logger.LogError(ex, "Error removing entity with key {KeyValue}", keyValue);
             return 0;
         }
     }
@@ -216,24 +221,23 @@ public class EfRepository<TEntity>(DbContext dbContext) : IRepository<TEntity, l
         return await GetListAsync(whereExpression, true, token);
     }
 
-    public virtual async Task<TEntity> GetAsync(long keyValue, CancellationToken token = default)
+    public virtual async Task<TEntity?> GetAsync(long keyValue, CancellationToken token = default)
     {
         return await GetAsync(keyValue, true, token);
     }
 
-    public virtual async Task<TEntity> GetAsync(long keyValue,
-        IEnumerable<Expression<Func<TEntity, dynamic>>> navigationPropertyPaths = null,
+    public virtual async Task<TEntity?> GetAsync(long keyValue,
+        IEnumerable<Expression<Func<TEntity, dynamic>>>? navigationPropertyPaths = null,
         CancellationToken token = default)
     {
         return await GetWithNavigationPropertiesAsync(keyValue, navigationPropertyPaths, true, token);
     }
 
-    public virtual async Task<TEntity> GetAsync(long keyValue,
-        Expression<Func<TEntity, dynamic>> navigationPropertyPath = null, CancellationToken token = default)
+    public virtual async Task<TEntity?> GetAsync(long keyValue,
+        Expression<Func<TEntity, dynamic>>? navigationPropertyPath = null, CancellationToken token = default)
     {
         return await GetAsync(keyValue, navigationPropertyPath, true, token);
     }
-
 
     protected virtual IQueryable<TEntity> GetDbSet(bool noTracking)
     {

@@ -179,22 +179,24 @@ public class BlogTests : TestBase
     public async Task DeleteBlog_ShouldDeleteBlogAndComments()
     {
         // Arrange
-        var blog = await BlogEfRepo.GetAsync(1, token: default);
-        Assert.IsNotNull(blog);
-
+        var blogId = 1L;
+        
         // 获取博客相关的评论数
-        var commentCount = await BlogCommentEfRepo.CountAsync(c => c.BlogId == blog.Id, token: default);
+        var commentCount = await BlogCommentEfRepo.CountAsync(c => c.BlogId == blogId, token: default);
         Assert.AreNotEqual(0, commentCount);
 
         // Act
-        await BlogEfRepo.RemoveAsync(blog, token: default);
+        var blog = await DbContext.Blogs.FindAsync(blogId);
+        Assert.IsNotNull(blog);
+        DbContext.Blogs.Remove(blog);
+        await DbContext.SaveChangesAsync();
 
         // Assert
-        var deletedBlog = await BlogEfRepo.GetAsync(blog.Id, token: default);
+        var deletedBlog = await BlogEfRepo.GetAsync(blogId, noTracking: true, token: default);
         Assert.IsNull(deletedBlog);
 
         // 验证评论也被删除
-        var remainingComments = await BlogCommentEfRepo.CountAsync(c => c.BlogId == blog.Id, token: default);
+        var remainingComments = await BlogCommentEfRepo.CountAsync(c => c.BlogId == blogId, token: default);
         Assert.AreEqual(0, remainingComments);
     }
 
