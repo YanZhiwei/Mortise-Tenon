@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tenon.Repository.EfCore.Tests.Entities;
 using Microsoft.Extensions.Logging;
@@ -20,22 +21,36 @@ public abstract class TestBase
     [TestInitialize]
     public virtual void Setup()
     {
-        var options = new DbContextOptionsBuilder<BlogDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
+        var services = new ServiceCollection();
+        
+        // 配置数据库
+        services.AddDbContext<BlogDbContext>(options =>
+            options.UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()));
 
-        var loggerFactory = LoggerFactory.Create(builder => // 创建日志工厂
-        {
-            builder.AddConsole(); // 可以根据需要添加其他日志提供程序
-        });
+        // 配置日志
+        services.AddLogging(builder => builder.AddConsole());
 
-        BlogLogger = loggerFactory.CreateLogger<EfRepository<Blog>>(); // 初始化日志
-        BlogTagLogger = loggerFactory.CreateLogger<EfRepository<BlogTag>>(); // 初始化日志
-        BlogCommentLogger = loggerFactory.CreateLogger<EfRepository<BlogComment>>(); // 初始化日志
-        DbContext = new BlogDbContext(options);
-        BlogEfRepo = new EfRepository<Blog>(DbContext, BlogLogger);
-        BlogTagEfRepo = new EfRepository<BlogTag>(DbContext, BlogTagLogger);
-        BlogCommentEfRepo = new EfRepository<BlogComment>(DbContext, BlogCommentLogger);
+        // 注册DbContext作为通用DbContext
+        services.AddScoped<DbContext>(sp => sp.GetRequiredService<BlogDbContext>());
+
+        // 注册仓储
+        services.AddScoped<EfRepository<Blog>>();
+        services.AddScoped<EfRepository<BlogTag>>();
+        services.AddScoped<EfRepository<BlogComment>>();
+        services.AddScoped<IRepository<Blog, long>>(sp => sp.GetRequiredService<EfRepository<Blog>>());
+        services.AddScoped<IRepository<BlogTag, long>>(sp => sp.GetRequiredService<EfRepository<BlogTag>>());
+        services.AddScoped<IRepository<BlogComment, long>>(sp => sp.GetRequiredService<EfRepository<BlogComment>>());
+
+        var serviceProvider = services.BuildServiceProvider();
+
+        // 获取服务
+        DbContext = serviceProvider.GetRequiredService<BlogDbContext>();
+        BlogLogger = serviceProvider.GetRequiredService<ILogger<EfRepository<Blog>>>();
+        BlogTagLogger = serviceProvider.GetRequiredService<ILogger<EfRepository<BlogTag>>>();
+        BlogCommentLogger = serviceProvider.GetRequiredService<ILogger<EfRepository<BlogComment>>>();
+        BlogEfRepo = serviceProvider.GetRequiredService<EfRepository<Blog>>();
+        BlogTagEfRepo = serviceProvider.GetRequiredService<EfRepository<BlogTag>>();
+        BlogCommentEfRepo = serviceProvider.GetRequiredService<EfRepository<BlogComment>>();
 
         // 初始化测试数据
         var tags = new List<BlogTag>
