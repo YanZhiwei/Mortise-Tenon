@@ -55,27 +55,6 @@ public abstract class TestBase
         // 替换默认的 UnitOfWork 实现
         services.Replace(ServiceDescriptor.Scoped<IUnitOfWork, TestUnitOfWork>());
 
-        // 移除所有 IEfRepository 和 IRepository 的注册
-        services.RemoveAll(typeof(IEfRepository<,>));
-        services.RemoveAll(typeof(IRepository<,>));
-
-        // 获取所有需要注册仓储的实体类型
-        var entityTypes = new[] { typeof(Blog), typeof(BlogTag), typeof(BlogComment) };
-
-        foreach (var entityType in entityTypes)
-        {
-            // 注册具体的仓储实现
-            var repositoryType = typeof(EfRepository<>).MakeGenericType(entityType);
-            services.AddScoped(repositoryType);
-
-            // 注册接口映射
-            var repositoryInterfaceType = typeof(IRepository<,>).MakeGenericType(entityType, typeof(long));
-            var efRepositoryInterfaceType = typeof(IEfRepository<,>).MakeGenericType(entityType, typeof(long));
-
-            services.AddScoped(repositoryInterfaceType, sp => sp.GetRequiredService(repositoryType));
-            services.AddScoped(efRepositoryInterfaceType, sp => sp.GetRequiredService(repositoryType));
-        }
-
         var serviceProvider = services.BuildServiceProvider();
         InitializeServices(serviceProvider);
         InitializeTestData();

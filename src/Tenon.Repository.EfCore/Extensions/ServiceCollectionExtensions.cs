@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Tenon.Repository.EfCore.Configurations;
 using Tenon.Repository.EfCore.Interceptors;
 using Tenon.Repository.EfCore.Transaction;
@@ -38,6 +39,36 @@ public static class ServiceCollectionExtensions
             optionsAction(options);
         });
 
+        // 注册 DbContext 作为基类
+        services.AddScoped<DbContext>(sp => sp.GetRequiredService<TDbContext>());
+
+        // 获取所有实体类型
+        var entityTypes = typeof(TDbContext).GetProperties()
+            .Where(p => p.PropertyType.IsGenericType && 
+                       p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>))
+            .Select(p => p.PropertyType.GetGenericArguments()[0])
+            .ToArray();
+
+        // 移除现有的仓储注册
+        services.RemoveAll(typeof(IEfRepository<,>));
+        services.RemoveAll(typeof(IRepository<,>));
+
+        // 为每个实体类型注册仓储
+        foreach (var entityType in entityTypes)
+        {
+            // 注册具体的仓储实现
+            var repositoryType = typeof(EfRepository<>).MakeGenericType(entityType);
+            services.AddScoped(repositoryType);
+
+            // 注册接口映射
+            var repositoryInterfaceType = typeof(IRepository<,>).MakeGenericType(entityType, typeof(long));
+            var efRepositoryInterfaceType = typeof(IEfRepository<,>).MakeGenericType(entityType, typeof(long));
+
+            services.AddScoped(repositoryInterfaceType, sp => sp.GetRequiredService(repositoryType));
+            services.AddScoped(efRepositoryInterfaceType, sp => sp.GetRequiredService(repositoryType));
+        }
+
+        // 注册通用服务
         RegisterCommonServices(services);
         return services;
     }
@@ -62,6 +93,5 @@ public static class ServiceCollectionExtensions
     private static void RegisterCommonServices(IServiceCollection services)
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped(typeof(IEfRepository<,>), typeof(EfRepository<>));
     }
 }
