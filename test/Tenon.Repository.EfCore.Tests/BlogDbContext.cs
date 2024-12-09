@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Tenon.Repository.EfCore.Tests.Entities;
+using Tenon.Repository.EfCore.Tests.Interceptors;
 
 namespace Tenon.Repository.EfCore.Tests;
 
@@ -26,6 +27,13 @@ public class BlogDbContext : DbContext
     /// 博客标签
     /// </summary>
     public DbSet<BlogTag> BlogTags { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+        optionsBuilder.AddInterceptors(new CommentSoftDeleteInterceptor());
+        optionsBuilder.AddInterceptors(new BlogSoftDeleteInterceptor());
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

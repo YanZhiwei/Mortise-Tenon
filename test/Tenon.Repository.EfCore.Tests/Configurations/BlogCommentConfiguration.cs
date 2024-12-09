@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Tenon.Repository.EfCore.Tests.Entities;
 
@@ -15,5 +16,12 @@ public class BlogCommentConfiguration : AbstractEntityTypeConfiguration<BlogComm
             .WithMany(x => x.Comments)
             .HasForeignKey(x => x.BlogId)
             .IsRequired();
+
+        builder.HasOne(x => x.Parent)
+            .WithMany(x => x.Children)
+            .HasForeignKey(x => x.ParentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }
