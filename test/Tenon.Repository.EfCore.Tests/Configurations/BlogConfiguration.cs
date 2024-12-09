@@ -13,8 +13,5 @@ public class BlogConfiguration : AbstractEntityTypeConfiguration<Blog>
     {
         builder.Property(x => x.Title).IsRequired().HasMaxLength(100);
         builder.Property(x => x.Content).IsRequired();
-
-        // 添加软删除查询过滤器
-        builder.HasQueryFilter(x => !x.IsDeleted);
     }
 } 

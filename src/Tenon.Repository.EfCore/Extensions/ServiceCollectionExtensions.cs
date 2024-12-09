@@ -65,7 +65,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     private static void ConfigureInterceptors(IServiceProvider serviceProvider, DbContextOptionsBuilder options)
     {
-        var auditableUser = serviceProvider.GetService<EfAuditableUser>();
+        var auditableUser = serviceProvider.GetService<EfUserAuditInfo>();
         if (auditableUser != null)
         {
             var fullAuditableFieldsInterceptor = new FullAuditableFieldsInterceptor(auditableUser);

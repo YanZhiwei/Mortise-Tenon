@@ -7,7 +7,7 @@ namespace Tenon.Repository.EfCore.Interceptors;
 /// <summary>
 /// 完整审计字段拦截器
 /// </summary>
-public class FullAuditableFieldsInterceptor(EfAuditableUser userContext) : SaveChangesInterceptor
+public class FullAuditableFieldsInterceptor(EfUserAuditInfo userAuditInfo) : SaveChangesInterceptor
 {
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
@@ -36,7 +36,7 @@ public class FullAuditableFieldsInterceptor(EfAuditableUser userContext) : SaveC
 
     private void HandleAuditableFields(DbContext context)
     {
-        var userId = userContext.User;
+        var userId = userAuditInfo.UserId;
         var entries = context.ChangeTracker.Entries<EfFullAuditableEntity>().ToList();
 
         foreach (var entry in entries)
@@ -57,7 +57,7 @@ public class FullAuditableFieldsInterceptor(EfAuditableUser userContext) : SaveC
 
     private void HandleSoftDelete(DbContext context)
     {
-        var userId = userContext.User;
+        var userId = userAuditInfo.UserId;
         var entries = context.ChangeTracker.Entries<EfFullAuditableEntity>()
             .Where(e => e.State != EntityState.Deleted && e.Entity.IsDeleted)
             .ToList();

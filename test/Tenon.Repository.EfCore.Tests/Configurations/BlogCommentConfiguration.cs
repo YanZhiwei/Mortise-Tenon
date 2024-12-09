@@ -21,7 +21,5 @@ public class BlogCommentConfiguration : AbstractEntityTypeConfiguration<BlogComm
             .WithMany(x => x.Children)
             .HasForeignKey(x => x.ParentId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }

@@ -1,13 +1,13 @@
-﻿namespace Tenon.Repository;
+namespace Tenon.Repository;
 
 /// <summary>
-/// 可审计用户接口
+/// 用户审计信息接口
 /// </summary>
 /// <typeparam name="TKey">用户主键类型</typeparam>
-public interface IAuditableUser<TKey>
+public interface IUserAuditInfo<TKey>
 {
     /// <summary>
     /// 用户主键
     /// </summary>
-    TKey User { get; set; }
-}
+    TKey UserId { get; set; }
+} 
