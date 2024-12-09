@@ -27,9 +27,17 @@ public class EfRepositoryTests : TestBase
     [TestCleanup]
     public async Task CleanupAsync()
     {
-        var entities = await DbContext.Set<Blog>().ToListAsync();
-        DbContext.RemoveRange(entities);
-        await DbContext.SaveChangesAsync();
+        // 直接清空数据库
+        DbContext.Set<Blog>().RemoveRange(DbContext.Set<Blog>());
+        try
+        {
+            await DbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // 忽略并重置上下文
+            DbContext.ChangeTracker.Clear();
+        }
     }
 
     /// <summary>
@@ -368,5 +376,162 @@ public class EfRepositoryTests : TestBase
         Assert.AreEqual(0, pageResult.Items.Count());
         Assert.AreEqual(1, pageResult.PageIndex);
         Assert.AreEqual(10, pageResult.PageSize);
+    }
+
+    /// <summary>
+    /// 测试更新不存在的实体
+    /// </summary>
+    [TestMethod]
+    public async Task UpdateAsync_WithNonExistentEntity_ShouldThrowException()
+    {
+        // Arrange
+        var nonExistentBlog = new Blog
+        {
+            Id = 99999,
+            Title = "不存在的博客",
+            Content = "测试内容",
+            PublishTime = DateTime.Now
+        };
+
+        // Act & Assert
+        await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () =>
+        {
+            await BlogEfRepo.UpdateAsync(nonExistentBlog);
+        });
+    }
+
+    /// <summary>
+    /// 测试删除不存在的实体
+    /// </summary>
+    [TestMethod]
+    public async Task RemoveAsync_WithNonExistentEntity_ShouldThrowException()
+    {
+        // Arrange
+        var nonExistentBlog = new Blog
+        {
+            Id = 99999,
+            Title = "不存在的博客",
+            Content = "测试内容",
+            PublishTime = DateTime.Now
+        };
+
+        // Act & Assert
+        await Assert.ThrowsExceptionAsync<DbUpdateConcurrencyException>(async () =>
+        {
+            await BlogEfRepo.RemoveAsync(nonExistentBlog);
+        });
+    }
+
+    /// <summary>
+    /// 测试分页查询 - 页码超出范围
+    /// </summary>
+    [TestMethod]
+    public async Task GetPagedListAsync_WithPageIndexOutOfRange_ShouldReturnEmptyList()
+    {
+        // Arrange
+        var blogs = new List<Blog>();
+        for (var i = 1; i <= 5; i++)
+        {
+            blogs.Add(new Blog
+            {
+                Title = $"博客{i}",
+                Content = $"内容{i}",
+                PublishTime = DateTime.Now
+            });
+        }
+        await BlogEfRepo.InsertAsync(blogs);
+
+        // Act
+        var pageResult = await BlogEfRepo.GetPagedListAsync(99, 10);
+
+        // Assert
+        Assert.IsNotNull(pageResult);
+        Assert.AreEqual(5, pageResult.TotalCount);
+        Assert.AreEqual(0, pageResult.Items.Count());
+        Assert.AreEqual(99, pageResult.PageIndex);
+    }
+
+    /// <summary>
+    /// 测试复杂条件查询
+    /// </summary>
+    [TestMethod]
+    public async Task GetListAsync_WithComplexConditions_ShouldReturnCorrectResults()
+    {
+        // Arrange
+        var baseTime = DateTime.Now.Date; // 使用日期，去除时间部分
+        var blogs = new List<Blog>
+        {
+            new() { 
+                Title = "技术博客", 
+                Content = "重要内容", 
+                PublishTime = baseTime.AddDays(-1) 
+            },
+            new() { 
+                Title = "技术分享", 
+                Content = "普通内容", 
+                PublishTime = baseTime.AddDays(-2) 
+            },
+            new() { 
+                Title = "生活随笔", 
+                Content = "重要内容", 
+                PublishTime = baseTime.AddDays(-3) 
+            }
+        };
+        await BlogEfRepo.InsertAsync(blogs);
+
+        // Act
+        var results = await BlogEfRepo.GetListAsync(
+            b => (b.Title.Contains("技术") && b.Content.Contains("重要")) // 修改条件逻辑
+                && b.PublishTime >= baseTime.AddDays(-2),
+            default
+        );
+
+        // Assert
+        Assert.IsNotNull(results);
+        Assert.AreEqual(1, results.Count());
+        Assert.AreEqual("技术博客", results.First().Title);
+    }
+
+    /// <summary>
+    /// 测试批量插入空集合
+    /// </summary>
+    [TestMethod]
+    public async Task InsertAsync_WithEmptyList_ShouldReturnZero()
+    {
+        // Arrange
+        var emptyList = new List<Blog>();
+
+        // Act
+        var result = await BlogEfRepo.InsertAsync(emptyList);
+
+        // Assert
+        Assert.AreEqual(0, result);
+        var count = await DbContext.Blogs.CountAsync();
+        Assert.AreEqual(0, count);
+    }
+
+    /// <summary>
+    /// 测试查询结果为空的条件查询
+    /// </summary>
+    [TestMethod]
+    public async Task GetListAsync_WithNoMatchingCondition_ShouldReturnEmptyList()
+    {
+        // Arrange
+        var blogs = new List<Blog>
+        {
+            new() { Title = "技术博客", Content = "内容A", PublishTime = DateTime.Now },
+            new() { Title = "生活随笔", Content = "内容B", PublishTime = DateTime.Now }
+        };
+        await BlogEfRepo.InsertAsync(blogs);
+
+        // Act
+        var results = await BlogEfRepo.GetListAsync(
+            b => b.Title.Contains("不存在的标题"),
+            default
+        );
+
+        // Assert
+        Assert.IsNotNull(results);
+        Assert.AreEqual(0, results.Count());
     }
 }
