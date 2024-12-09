@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tenon.Repository.EfCore.Extensions;
-using Tenon.Repository.EfCore.Interceptors;
 using Tenon.Repository.EfCore.Tests.Entities;
 
 namespace Tenon.Repository.EfCore.Tests;
@@ -43,13 +42,14 @@ public abstract class TestBase
         // 注册 DbContext 作为基类
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<BlogDbContext>());
 
+        // 注册 EfAuditableUser
+        services.AddScoped<EfAuditableUser>(_ => new EfAuditableUser { User = 1 });
+
         // 使用 AddEfCore 扩展方法注册仓储和 DbContext
         services.AddEfCore<BlogDbContext, TestUnitOfWork>(
             configuration.GetSection("Tenon:Repository"),
-            options => options.UseInMemoryDatabase(Guid.NewGuid().ToString()),
-            new[] {new BasicAuditableFieldsInterceptor()}
+            options => options.UseInMemoryDatabase(Guid.NewGuid().ToString())
         );
-
 
         var serviceProvider = services.BuildServiceProvider();
         InitializeServices(serviceProvider);
@@ -86,11 +86,12 @@ public abstract class TestBase
     /// </summary>
     private List<BlogTag> InitializeBlogTags()
     {
+        var now = DateTimeOffset.UtcNow;
         var tags = new List<BlogTag>
         {
-            new() {Name = "技术", Description = "技术相关文章"},
-            new() {Name = "生活", Description = "生活随笔"},
-            new() {Name = "编程", Description = "编程技巧"}
+            new() { Name = "技术", Description = "技术相关文章", CreatedAt = now },
+            new() { Name = "生活", Description = "生活随笔", CreatedAt = now },
+            new() { Name = "编程", Description = "编程技巧", CreatedAt = now }
         };
         DbContext.BlogTags.AddRange(tags);
         DbContext.SaveChanges();
@@ -102,6 +103,7 @@ public abstract class TestBase
     /// </summary>
     private List<Blog> InitializeBlogs(List<BlogTag> tags)
     {
+        var now = DateTimeOffset.UtcNow;
         var blogs = new List<Blog>
         {
             new()
@@ -112,7 +114,9 @@ public abstract class TestBase
                 PublishTime = DateTime.Now.AddDays(-5),
                 ReadCount = 100,
                 LikeCount = 10,
-                Tags = new List<BlogTag> {tags[0], tags[2]}
+                Tags = new List<BlogTag> { tags[0], tags[2] },
+                CreatedAt = now,
+                CreatedBy = 1
             },
             new()
             {
@@ -122,7 +126,9 @@ public abstract class TestBase
                 PublishTime = DateTime.Now.AddDays(-3),
                 ReadCount = 200,
                 LikeCount = 20,
-                Tags = new List<BlogTag> {tags[1]}
+                Tags = new List<BlogTag> { tags[1] },
+                CreatedAt = now,
+                CreatedBy = 1
             },
             new()
             {
@@ -132,7 +138,9 @@ public abstract class TestBase
                 PublishTime = DateTime.Now.AddDays(-1),
                 ReadCount = 150,
                 LikeCount = 15,
-                Tags = new List<BlogTag> {tags[0], tags[1], tags[2]}
+                Tags = new List<BlogTag> { tags[0], tags[1], tags[2] },
+                CreatedAt = now,
+                CreatedBy = 1
             }
         };
         DbContext.Blogs.AddRange(blogs);
@@ -145,6 +153,7 @@ public abstract class TestBase
     /// </summary>
     private List<BlogComment> InitializeBlogComments(List<Blog> blogs)
     {
+        var now = DateTimeOffset.UtcNow;
         var comments = new List<BlogComment>
         {
             new()
@@ -153,7 +162,9 @@ public abstract class TestBase
                 Content = "很好的文章！",
                 Commenter = "王五",
                 CommentTime = DateTime.Now.AddDays(-4),
-                LikeCount = 5
+                LikeCount = 5,
+                CreatedAt = now,
+                CreatedBy = 1
             },
             new()
             {
@@ -161,7 +172,9 @@ public abstract class TestBase
                 Content = "学习了！",
                 Commenter = "赵六",
                 CommentTime = DateTime.Now.AddDays(-4).AddHours(2),
-                LikeCount = 3
+                LikeCount = 3,
+                CreatedAt = now,
+                CreatedBy = 1
             },
             new()
             {
@@ -169,7 +182,9 @@ public abstract class TestBase
                 Content = "写得不错！",
                 Commenter = "王五",
                 CommentTime = DateTime.Now.AddDays(-2),
-                LikeCount = 4
+                LikeCount = 4,
+                CreatedAt = now,
+                CreatedBy = 1
             }
         };
         DbContext.BlogComments.AddRange(comments);
@@ -182,6 +197,7 @@ public abstract class TestBase
     /// </summary>
     private void InitializeChildComments(List<Blog> blogs, List<BlogComment> comments)
     {
+        var now = DateTimeOffset.UtcNow;
         var childComments = new List<BlogComment>
         {
             new()
@@ -191,7 +207,9 @@ public abstract class TestBase
                 Commenter = "张三",
                 CommentTime = DateTime.Now.AddDays(-4).AddHours(1),
                 LikeCount = 2,
-                ParentId = comments[0].Id
+                ParentId = comments[0].Id,
+                CreatedAt = now,
+                CreatedBy = 1
             },
             new()
             {
@@ -200,13 +218,14 @@ public abstract class TestBase
                 Commenter = "李四",
                 CommentTime = DateTime.Now.AddDays(-2).AddHours(1),
                 LikeCount = 1,
-                ParentId = comments[2].Id
+                ParentId = comments[2].Id,
+                CreatedAt = now,
+                CreatedBy = 1
             }
         };
         DbContext.BlogComments.AddRange(childComments);
         DbContext.SaveChanges();
     }
-
 
     [TestCleanup]
     public virtual void Cleanup()

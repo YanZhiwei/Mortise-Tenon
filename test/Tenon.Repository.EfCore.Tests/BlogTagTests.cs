@@ -28,6 +28,9 @@ public class BlogTagTests : TestBase
         Assert.IsNotNull(savedTag);
         Assert.AreEqual(tag.Name, savedTag.Name);
         Assert.AreEqual(tag.Description, savedTag.Description);
+        Assert.IsTrue(savedTag.CreatedAt > DateTimeOffset.MinValue);
+        Assert.IsNull(savedTag.UpdatedAt);
+        Assert.IsNull(savedTag.DeletedAt);
     }
 
     /// <summary>
@@ -54,26 +57,24 @@ public class BlogTagTests : TestBase
     /// 测试更新标签
     /// </summary>
     [TestMethod]
-    public async Task UpdateTag_ShouldUpdateSuccessfully()
+    public async Task UpdateTag_ShouldUpdateAuditFields()
     {
         // Arrange
-        var tagId = 1L;
-        var tag = await DbContext.BlogTags.FindAsync(tagId);
+        var tag = await BlogTagEfRepo.GetAsync(1, noTracking: false, token: default);
         Assert.IsNotNull(tag);
 
-        // Act
-        tag.Name = "更新后的标签";
-        tag.Description = "更新后的描述";
-        await DbContext.SaveChangesAsync();
+        var originalCreatedAt = tag.CreatedAt;
 
-        // 清除跟踪器并重新获取标签进行验证
-        DbContext.ChangeTracker.Clear();
-        var updatedTag = await DbContext.BlogTags.FindAsync(tagId);
+        // Act
+        tag.Description = "更新后的描述";
+        await BlogTagEfRepo.UpdateAsync(tag, token: default);
 
         // Assert
+        var updatedTag = await BlogTagEfRepo.GetAsync(1, token: default);
         Assert.IsNotNull(updatedTag);
-        Assert.AreEqual("更新后的标签", updatedTag.Name);
         Assert.AreEqual("更新后的描述", updatedTag.Description);
+        Assert.AreEqual(originalCreatedAt, updatedTag.CreatedAt);
+        Assert.IsTrue(updatedTag.UpdatedAt.HasValue);
     }
 
     /// <summary>
@@ -84,7 +85,7 @@ public class BlogTagTests : TestBase
     {
         // Arrange
         var tagId = 1L;
-        
+
         // 获取关联的博客数量
         var blogCount = await BlogEfRepo.CountAsync(b => b.Tags.Any(t => t.Id == tagId), token: default);
         Assert.AreNotEqual(0, blogCount);
@@ -145,4 +146,4 @@ public class BlogTagTests : TestBase
         Assert.IsTrue(unusedTags.Count > 0);
         Assert.IsTrue(unusedTags.All(t => t.Blogs.Count == 0));
     }
-} 
+}

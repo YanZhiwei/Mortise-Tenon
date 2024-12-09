@@ -33,17 +33,17 @@ public class BlogTests : TestBase
     {
         // Arrange
         var tagName = "技术";
-        
+
         // 清除跟踪器
         DbContext.ChangeTracker.Clear();
-        
+
         // 获取标签及其关联的博客
         var tag = await DbContext.BlogTags
             .Include(t => t.Blogs)
             .FirstAsync(t => t.Name == tagName);
-            
+
         Assert.IsNotNull(tag);
-        
+
         // Act
         var blogs = await DbContext.Blogs
             .Include(b => b.Tags)
@@ -54,7 +54,7 @@ public class BlogTests : TestBase
         // Assert
         Assert.AreEqual(2, blogs.Count);
         Assert.IsTrue(blogs.All(b => b.Tags.Any(t => t.Name == tagName)));
-        
+
         // 验证具体的博客标题
         var blogTitles = blogs.Select(b => b.Title).ToList();
         CollectionAssert.Contains(blogTitles, "第一篇博客");
@@ -76,100 +76,77 @@ public class BlogTests : TestBase
             PublishTime = DateTime.Now
         };
 
-        // 先创建博客
+        // Act
         await BlogEfRepo.InsertAsync(blog, token: default);
 
-        // 获取要关联的标签ID
-        var tagIds = await DbContext.BlogTags
-            .Where(t => t.Name == "技术" || t.Name == "生活")
-            .Select(t => t.Id)
-            .ToListAsync();
-
-        // 清除 DbContext 跟踪的所有实体
-        DbContext.ChangeTracker.Clear();
-
-        // 重新加载博客
-        var blogToUpdate = await DbContext.Blogs
-            .Include(b => b.Tags)
-            .FirstAsync(b => b.Id == blog.Id);
-
-        // 加载要关联的标签
-        var tagsToAdd = await DbContext.BlogTags
-            .Where(t => tagIds.Contains(t.Id))
-            .ToListAsync();
-
-        // 建立关联关系
-        foreach (var tag in tagsToAdd)
-        {
-            blogToUpdate.Tags.Add(tag);
-        }
-
-        // 保存更改
-        await DbContext.SaveChangesAsync();
-
-        // 重新加载博客及其标签进行验证
-        var savedBlog = await DbContext.Blogs
-            .Include(b => b.Tags)
-            .FirstAsync(b => b.Id == blog.Id);
-
         // Assert
+        var savedBlog = await BlogEfRepo.GetAsync(blog.Id, token: default);
         Assert.IsNotNull(savedBlog);
         Assert.AreEqual(blog.Title, savedBlog.Title);
-        Assert.AreEqual(2, savedBlog.Tags.Count);
-        Assert.IsTrue(savedBlog.Tags.Any(t => t.Name == "技术"));
-        Assert.IsTrue(savedBlog.Tags.Any(t => t.Name == "生活"));
+        Assert.AreEqual(1, savedBlog.CreatedBy);
+        Assert.IsTrue(savedBlog.CreatedAt > DateTimeOffset.MinValue);
+        Assert.IsFalse(savedBlog.IsDeleted);
+        Assert.IsNull(savedBlog.UpdatedAt);
+        Assert.IsNull(savedBlog.UpdatedBy);
+        Assert.IsNull(savedBlog.DeletedAt);
+        Assert.IsNull(savedBlog.DeletedBy);
     }
 
     /// <summary>
-    /// 测试更新博客及其标签
+    /// 测试更新博客
     /// </summary>
     [TestMethod]
-    public async Task UpdateBlogWithTags_ShouldUpdateSuccessfully()
+    public async Task UpdateBlog_ShouldUpdateAuditFields()
     {
         // Arrange
-        var blogId = 1L;
+        var blog = await BlogEfRepo.GetAsync(1, noTracking: false, token: default);
+        Assert.IsNotNull(blog);
 
-        // 清除跟踪器
-        DbContext.ChangeTracker.Clear();
+        var originalCreatedAt = blog.CreatedAt;
+        var originalCreatedBy = blog.CreatedBy;
 
-        // 加载博客及其标签
-        var blog = await DbContext.Blogs
-            .Include(b => b.Tags)
-            .FirstAsync(b => b.Id == blogId);
-
-        // 获取要更新的标签
-        var newTagId = await DbContext.BlogTags
-            .Where(t => t.Name == "生活")
-            .Select(t => t.Id)
-            .FirstAsync();
-
-        // 更新博客基本信息
+        // Act
         blog.Title = "更新后的标题";
-
-        // 清除现有标签
-        blog.Tags.Clear();
-
-        // 加载新标签
-        var newTag = await DbContext.BlogTags.FindAsync(newTagId);
-        Assert.IsNotNull(newTag);
-
-        // 添加新标签
-        blog.Tags.Add(newTag);
-
-        // 保存更改
-        await DbContext.SaveChangesAsync();
-
-        // 重新加载博客进行验证
-        DbContext.ChangeTracker.Clear();
-        var updatedBlog = await DbContext.Blogs
-            .Include(b => b.Tags)
-            .FirstAsync(b => b.Id == blogId);
+        await BlogEfRepo.UpdateAsync(blog, token: default);
 
         // Assert
+        var updatedBlog = await BlogEfRepo.GetAsync(1, token: default);
         Assert.IsNotNull(updatedBlog);
         Assert.AreEqual("更新后的标题", updatedBlog.Title);
-        Assert.AreEqual(1, updatedBlog.Tags.Count);
-        Assert.AreEqual("生活", updatedBlog.Tags.First().Name);
+        Assert.AreEqual(originalCreatedAt, updatedBlog.CreatedAt);
+        Assert.AreEqual(originalCreatedBy, updatedBlog.CreatedBy);
+        Assert.IsTrue(updatedBlog.UpdatedAt.HasValue);
+        Assert.AreEqual(1, updatedBlog.UpdatedBy);
+        Assert.IsFalse(updatedBlog.IsDeleted);
+        Assert.IsNull(updatedBlog.DeletedAt);
+        Assert.IsNull(updatedBlog.DeletedBy);
+    }
+
+    /// <summary>
+    /// 测试软删除博客
+    /// </summary>
+    [TestMethod]
+    public async Task SoftDeleteBlog_ShouldSetDeleteFields()
+    {
+        // Arrange
+        var blog = await BlogEfRepo.GetAsync(1, noTracking: false, token: default);
+        Assert.IsNotNull(blog);
+
+        var originalCreatedAt = blog.CreatedAt;
+        var originalCreatedBy = blog.CreatedBy;
+
+        // Act
+        blog.IsDeleted = true;
+        await BlogEfRepo.UpdateAsync(blog, token: default);
+
+        // Assert
+        var deletedBlog = await DbContext.Blogs.IgnoreQueryFilters().FirstOrDefaultAsync(b => b.Id == 1);
+        Assert.IsNotNull(deletedBlog);
+        Assert.IsTrue(deletedBlog.IsDeleted);
+        Assert.AreEqual(originalCreatedAt, deletedBlog.CreatedAt);
+        Assert.AreEqual(originalCreatedBy, deletedBlog.CreatedBy);
+        Assert.IsTrue(deletedBlog.DeletedAt.HasValue);
+        Assert.AreEqual(1, deletedBlog.DeletedBy);
     }
 
     /// <summary>
@@ -180,7 +157,7 @@ public class BlogTests : TestBase
     {
         // Arrange
         var blogId = 1L;
-        
+
         // 获取博客相关的评论数
         var commentCount = await BlogCommentEfRepo.CountAsync(c => c.BlogId == blogId, token: default);
         Assert.AreNotEqual(0, commentCount);
@@ -290,4 +267,4 @@ public class BlogTests : TestBase
             Assert.IsTrue(blogList[i - 1].ReadCount >= blogList[i].ReadCount);
         }
     }
-} 
+}

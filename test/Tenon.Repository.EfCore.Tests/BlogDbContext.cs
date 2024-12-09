@@ -47,6 +47,9 @@ public class BlogDbContext : DbContext
                 .WithOne(x => x.Blog)
                 .HasForeignKey(x => x.BlogId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // 添加全局查询过滤器，过滤已删除的博客
+            builder.HasQueryFilter(x => !x.IsDeleted);
         });
 
         modelBuilder.Entity<BlogTag>(builder =>
@@ -67,6 +70,45 @@ public class BlogDbContext : DbContext
                 .WithMany(x => x.Children)
                 .HasForeignKey(x => x.ParentId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // 添加全局查询过滤器，过滤已删除的评论
+            builder.HasQueryFilter(x => !x.IsDeleted);
         });
+    }
+
+    public override int SaveChanges()
+    {
+        HandleSoftDelete();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        HandleSoftDelete();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void HandleSoftDelete()
+    {
+        var entries = ChangeTracker.Entries<BlogComment>()
+            .Where(e => e.State != EntityState.Deleted && e.Entity.IsDeleted)
+            .ToList();
+
+        foreach (var entry in entries)
+        {
+            // 获取所有子评论（包括已删除的）
+            var childComments = BlogComments
+                .IgnoreQueryFilters()
+                .Where(c => c.ParentId == entry.Entity.Id)
+                .ToList();
+
+            // 标记子评论为已删除
+            foreach (var childComment in childComments)
+            {
+                childComment.IsDeleted = true;
+                childComment.DeletedAt = DateTimeOffset.UtcNow;
+                childComment.DeletedBy = entry.Entity.DeletedBy;
+            }
+        }
     }
 } 
