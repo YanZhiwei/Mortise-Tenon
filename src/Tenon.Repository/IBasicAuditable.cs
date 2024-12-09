@@ -14,4 +14,10 @@ public interface IBasicAuditable
     /// 获取或设置更新时间。
     /// </summary>
     DateTimeOffset? UpdatedAt { get; set; }
+
+
+    /// <summary>
+    /// 获取或设置删除时间。
+    /// </summary>
+    DateTimeOffset? DeletedAt { get; set; }
 }

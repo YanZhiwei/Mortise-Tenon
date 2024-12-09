@@ -72,7 +72,6 @@ public static class ServiceCollectionExtensions
             options.AddInterceptors(fullAuditableFieldsInterceptor);
         }
 
-        options.AddInterceptors(new SoftDeleteInterceptor());
         options.AddInterceptors(new BasicAuditableFieldsInterceptor());
         options.AddInterceptors(new ConcurrencyCheckInterceptor());
     }
