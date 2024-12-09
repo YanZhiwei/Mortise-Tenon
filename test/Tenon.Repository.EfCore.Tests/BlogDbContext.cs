@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
+using Tenon.Repository.EfCore;
 using Tenon.Repository.EfCore.Tests.Entities;
 using Tenon.Repository.EfCore.Tests.Interceptors;
 
@@ -7,7 +9,7 @@ namespace Tenon.Repository.EfCore.Tests;
 /// <summary>
 /// 博客数据库上下文
 /// </summary>
-public class BlogDbContext : DbContext
+public class BlogDbContext : TenonDbContext
 {
     public BlogDbContext(DbContextOptions<BlogDbContext> options) : base(options)
     {
@@ -28,18 +30,15 @@ public class BlogDbContext : DbContext
     /// </summary>
     public DbSet<BlogTag> BlogTags { get; set; }
 
+    /// <summary>
+    /// 获取实体所在程序集
+    /// </summary>
+    protected override Assembly EntityAssembly => typeof(BlogDbContext).Assembly;
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
         optionsBuilder.AddInterceptors(new CommentSoftDeleteInterceptor());
         optionsBuilder.AddInterceptors(new BlogSoftDeleteInterceptor());
-    }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-        
-        // 应用所有实体配置
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(BlogDbContext).Assembly);
     }
 } 
