@@ -35,34 +35,34 @@ public class BlogTests : TestBase
         // Arrange
         var tagName = "技术";
 
-        // Act
+        // 先获取包含指定标签的博客ID
         var blogs = await BlogEfRepo.GetListAsync(
             whereExpression: b => b.Tags.Any(t => t.Name == tagName),
             noTracking: true,
             token: default);
 
-        var blogIds = blogs.Select(x => x.Id).ToList();
-        
-        // 重新查询每个博客的详细信息
+        // 获取博客详情（包含标签）
         var blogsWithTags = new List<Blog>();
-        foreach (var blogId in blogIds)
+        foreach (var blog in blogs)
         {
-            var blog = await BlogEfRepo.GetWithNavigationPropertiesAsync(
-                blogId,
+            var blogWithTags = await BlogEfRepo.GetWithNavigationPropertiesAsync(
+                blog.Id,
                 [(Expression<Func<Blog, dynamic>>)(b => b.Tags)],
                 token: default);
-            
-            if (blog != null)
+
+            if (blogWithTags != null)
             {
-                blogsWithTags.Add(blog);
+                blogsWithTags.Add(blogWithTags);
             }
         }
 
-        // Assert
-        Assert.AreEqual(2, blogsWithTags.Count);
-        Assert.IsTrue(blogsWithTags.All(b => b.Tags.Any(t => t.Name == tagName)));
+        var orderedBlogs = blogsWithTags.OrderBy(b => b.Id).ToList();
 
-        var blogTitles = blogsWithTags.Select(b => b.Title).ToList();
+        // Assert
+        Assert.AreEqual(2, orderedBlogs.Count);
+        Assert.IsTrue(orderedBlogs.All(b => b.Tags.Any(t => t.Name == tagName)));
+
+        var blogTitles = orderedBlogs.Select(b => b.Title).ToList();
         CollectionAssert.Contains(blogTitles, "第一篇博客");
         CollectionAssert.Contains(blogTitles, "第三篇博客");
     }
