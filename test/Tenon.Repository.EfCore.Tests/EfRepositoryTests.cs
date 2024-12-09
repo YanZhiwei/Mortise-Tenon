@@ -13,6 +13,26 @@ namespace Tenon.Repository.EfCore.Tests;
 public class EfRepositoryTests : TestBase
 {
     /// <summary>
+    /// 每个测试方法执行前的初始化
+    /// </summary>
+    [TestInitialize]
+    public async Task TestInitialize()
+    {
+        await CleanupAsync();
+    }
+
+    /// <summary>
+    /// 每个测试方法执行后的清理
+    /// </summary>
+    [TestCleanup]
+    public async Task CleanupAsync()
+    {
+        var entities = await DbContext.Set<Blog>().ToListAsync();
+        DbContext.RemoveRange(entities);
+        await DbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
     /// 测试插入单个实体
     /// </summary>
     [TestMethod]
@@ -149,19 +169,22 @@ public class EfRepositoryTests : TestBase
             });
         await BlogEfRepo.InsertAsync(blogs);
 
+        // 确保数据已经正确插入
+        var totalCount = await DbContext.Set<Blog>().CountAsync();
+        Assert.AreEqual(20, totalCount, "数据插入验证失败");
+
         // Act
         var pageResult = await BlogEfRepo.GetPagedListAsync(
-            b => true,
             2,
             5
         );
 
         // Assert
         Assert.IsNotNull(pageResult);
-        Assert.AreEqual(20, pageResult.TotalCount);
-        Assert.AreEqual(5, pageResult.Items.Count());
-        Assert.AreEqual(2, pageResult.PageIndex);
-        Assert.AreEqual(5, pageResult.PageSize);
+        Assert.AreEqual(20, pageResult.TotalCount, "总记录数不匹配");
+        Assert.AreEqual(5, pageResult.Items.Count(), "分页大小不匹配");
+        Assert.AreEqual(2, pageResult.PageIndex, "页码不匹配");
+        Assert.AreEqual(5, pageResult.PageSize, "每页大小不匹配");
     }
 
     /// <summary>

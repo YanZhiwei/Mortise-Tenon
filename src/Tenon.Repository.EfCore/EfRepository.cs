@@ -53,7 +53,6 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
         return await query.ToListAsync(token).ConfigureAwait(false);
     }
 
-
     /// <summary>
     /// 异步获取符合条件的列表，并包含指定的导航属性
     /// </summary>
@@ -133,15 +132,16 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
     /// <summary>
     /// 异步获取分页列表
     /// </summary>
-    /// <param name="whereExpression">查询条件表达式</param>
     /// <param name="pageIndex">当前页索引</param>
     /// <param name="pageSize">每页大小</param>
-    /// <param name="includeProperties">要包含的导航属性路径</param>
-    /// <param name="noTracking">是否不追踪实体</param>
+    /// <param name="whereExpression">查询条件</param>
+    /// <param name="includeProperties">包含的导航属性</param>
+    /// <param name="noTracking">是否不追踪</param>
     /// <param name="token">取消令牌</param>
-    /// <returns>分页结果</returns>
-    public async Task<PagedResult<TEntity>> GetPagedListAsync(Expression<Func<TEntity, bool>> whereExpression,
-        int pageIndex, int pageSize, IEnumerable<Expression<Func<TEntity, dynamic>>>? includeProperties = null,
+    public async Task<PagedResult<TEntity>> GetPagedListAsync(
+        int pageIndex, int pageSize,
+        Expression<Func<TEntity, bool>>? whereExpression = null,
+        IEnumerable<Expression<Func<TEntity, dynamic>>>? includeProperties = null,
         bool noTracking = true, CancellationToken token = default)
     {
         var query = whereExpression != null ? GetDbSet(noTracking).Where(whereExpression) : GetDbSet(noTracking);
