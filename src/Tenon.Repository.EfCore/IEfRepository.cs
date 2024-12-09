@@ -13,9 +13,11 @@ public interface IEfRepository<TEntity, in TKey> where TEntity : IEntity<TKey>
     /// 异步获取列表
     /// </summary>
     /// <param name="whereExpression">查询条件</param>
+    /// <param name="includeExpression">包含的导航属性</param>
     /// <param name="noTracking">是否不追踪</param>
     /// <param name="token">取消令牌</param>
-    Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> whereExpression, bool noTracking = true,
+    Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> whereExpression, 
+        Expression<Func<TEntity, dynamic>>? includeExpression = null, bool noTracking = true,
         CancellationToken token = default);
 
     /// <summary>
