@@ -253,4 +253,120 @@ public class EfRepositoryTests : TestBase
         // Assert
         Assert.AreEqual(2, count);
     }
+
+    /// <summary>
+    /// 测试批量更新实体
+    /// </summary>
+    [TestMethod]
+    public async Task UpdateAsync_WithMultipleEntities_ShouldUpdateAllSuccessfully()
+    {
+        // Arrange
+        var blogs = new List<Blog>
+        {
+            new() { Title = "原始博客1", Content = "内容1", PublishTime = DateTime.Now },
+            new() { Title = "原始博客2", Content = "内容2", PublishTime = DateTime.Now }
+        };
+        await BlogEfRepo.InsertAsync(blogs);
+
+        // 修改标题
+        foreach (var blog in blogs)
+        {
+            blog.Title = $"更新后的{blog.Title}";
+        }
+
+        // Act
+        var result = await BlogEfRepo.UpdateAsync(blogs);
+
+        // Assert
+        Assert.IsTrue(result > 0);
+        var updatedBlogs = await DbContext.Blogs.ToListAsync();
+        Assert.AreEqual(blogs.Count, updatedBlogs.Count);
+        foreach (var blog in updatedBlogs)
+        {
+            Assert.IsTrue(blog.Title.StartsWith("更新后的"));
+        }
+    }
+
+    /// <summary>
+    /// 测试批量删除实体
+    /// </summary>
+    [TestMethod]
+    public async Task RemoveAsync_WithMultipleEntities_ShouldRemoveAllSuccessfully()
+    {
+        // Arrange
+        var blogs = new List<Blog>
+        {
+            new() { Title = "待删除博客1", Content = "内容1", PublishTime = DateTime.Now },
+            new() { Title = "待删除博客2", Content = "内容2", PublishTime = DateTime.Now }
+        };
+        await BlogEfRepo.InsertAsync(blogs);
+
+        // Act
+        var result = await BlogEfRepo.RemoveAsync(blogs);
+
+        // Assert
+        Assert.IsTrue(result > 0);
+        var remainingBlogs = await DbContext.Blogs.ToListAsync();
+        Assert.AreEqual(0, remainingBlogs.Count);
+    }
+
+    /// <summary>
+    /// 测试排序和查询组合
+    /// </summary>
+    [TestMethod]
+    public async Task GetListAsync_WithOrderByAndFilter_ShouldReturnOrderedFilteredResults()
+    {
+        // Arrange
+        var blogs = new List<Blog>
+        {
+            new() { Title = "技术博客", Content = "内容A", PublishTime = DateTime.Now.AddDays(-2) },
+            new() { Title = "技术分享", Content = "内容B", PublishTime = DateTime.Now.AddDays(-1) },
+            new() { Title = "生活随笔", Content = "内容C", PublishTime = DateTime.Now }
+        };
+        await BlogEfRepo.InsertAsync(blogs);
+
+        // Act
+        var results = (await BlogEfRepo.GetListAsync(
+            b => b.Title.Contains("技术"),
+            default
+        )).OrderByDescending(b => b.PublishTime);
+
+        // Assert
+        Assert.IsNotNull(results);
+        Assert.AreEqual(2, results.Count());
+        Assert.AreEqual("技术分享", results.First().Title);
+    }
+
+    /// <summary>
+    /// 测试获取不存在的实体
+    /// </summary>
+    [TestMethod]
+    public async Task GetAsync_WithInvalidId_ShouldReturnNull()
+    {
+        // Arrange
+        const long invalidId = 99999;
+
+        // Act
+        var result = await BlogEfRepo.GetAsync(invalidId, default);
+
+        // Assert
+        Assert.IsNull(result);
+    }
+
+    /// <summary>
+    /// 测试空集合的分页查询
+    /// </summary>
+    [TestMethod]
+    public async Task GetPagedListAsync_WithEmptyData_ShouldReturnEmptyPage()
+    {
+        // Act
+        var pageResult = await BlogEfRepo.GetPagedListAsync(1, 10);
+
+        // Assert
+        Assert.IsNotNull(pageResult);
+        Assert.AreEqual(0, pageResult.TotalCount);
+        Assert.AreEqual(0, pageResult.Items.Count());
+        Assert.AreEqual(1, pageResult.PageIndex);
+        Assert.AreEqual(10, pageResult.PageSize);
+    }
 }
