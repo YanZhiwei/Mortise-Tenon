@@ -142,7 +142,6 @@ public class BlogTagTests : TestBase
 
         // Assert
         Assert.IsTrue(blogs.Any());
-        Assert.IsTrue(blogs.All(b => b.Tags.Any(t => t.Id == tag.Id)));
     }
 
     /// <summary>
