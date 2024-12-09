@@ -22,8 +22,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddEfCore<TDbContext, TUnitOfWork>(
         this IServiceCollection services,
         IConfigurationSection dbSection,
-        Action<DbContextOptionsBuilder> optionsAction,
-        IInterceptor[]? interceptors = null)
+        Action<DbContextOptionsBuilder> optionsAction)
         where TDbContext : DbContext
         where TUnitOfWork : class, IUnitOfWork
     {
@@ -32,27 +31,16 @@ public static class ServiceCollectionExtensions
             throw new ArgumentNullException(nameof(dbConfig));
 
         services.Configure<DbOptions>(dbSection);
+
         services.AddDbContext<TDbContext>((serviceProvider, options) =>
         {
-            ConfigureInterceptors(serviceProvider, options, interceptors);
+            ConfigureInterceptors(serviceProvider, options);
             optionsAction(options);
         });
 
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<TDbContext>());
 
-        var entityTypes = GetEntityTypes(typeof(TDbContext).Assembly);
-
-        foreach (var entityType in entityTypes)
-        {
-            var repositoryType = typeof(EfRepository<>).MakeGenericType(entityType);
-            services.AddScoped(repositoryType);
-
-            var repositoryInterfaceType = typeof(IRepository<,>).MakeGenericType(entityType, typeof(long));
-            var efRepositoryInterfaceType = typeof(IEfRepository<,>).MakeGenericType(entityType, typeof(long));
-
-            services.AddScoped(repositoryInterfaceType, sp => sp.GetRequiredService(repositoryType));
-            services.AddScoped(efRepositoryInterfaceType, sp => sp.GetRequiredService(repositoryType));
-        }
+        RegisterRepositories(services, typeof(TDbContext).Assembly);
 
         services.AddScoped<IUnitOfWork, TUnitOfWork>();
 
@@ -69,21 +57,24 @@ public static class ServiceCollectionExtensions
         IInterceptor[]? interceptors = null)
         where TDbContext : DbContext
     {
-        return AddEfCore<TDbContext, UnitOfWork>(services, dbSection, optionsAction, interceptors);
+        return AddEfCore<TDbContext, UnitOfWork>(services, dbSection, optionsAction);
     }
 
     /// <summary>
     ///     配置拦截器
     /// </summary>
-    private static void ConfigureInterceptors(IServiceProvider serviceProvider, DbContextOptionsBuilder options,
-        IInterceptor[]? interceptors)
+    private static void ConfigureInterceptors(IServiceProvider serviceProvider, DbContextOptionsBuilder options)
     {
-        if (interceptors?.Any() ?? false)
-            options.AddInterceptors(interceptors);
+        var auditableUser = serviceProvider.GetService<EfAuditableUser>();
+        if (auditableUser != null)
+        {
+            var fullAuditableFieldsInterceptor = new FullAuditableFieldsInterceptor(auditableUser);
+            options.AddInterceptors(fullAuditableFieldsInterceptor);
+        }
 
-        var basicAuditableInterceptor = serviceProvider.GetService<BasicAuditableFieldsInterceptor>();
-        if (basicAuditableInterceptor != null)
-            options.AddInterceptors(basicAuditableInterceptor);
+        options.AddInterceptors(new SoftDeleteInterceptor());
+        options.AddInterceptors(new BasicAuditableFieldsInterceptor());
+        options.AddInterceptors(new ConcurrencyCheckInterceptor());
     }
 
     /// <summary>
@@ -95,9 +86,31 @@ public static class ServiceCollectionExtensions
     {
         return assembly.GetTypes()
             .Where(type =>
-                type is {IsAbstract: false, IsInterface: false} &&
+                type is { IsAbstract: false, IsInterface: false } &&
                 Enumerable.Any(type.GetInterfaces(), i =>
-                        i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntity<>)))
+                    i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntity<>)))
             .ToArray();
+    }
+
+    /// <summary>
+    ///     注册所有实体的仓储
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <param name="assembly">程序集</param>
+    private static void RegisterRepositories(IServiceCollection services, Assembly assembly)
+    {
+        var entityTypes = GetEntityTypes(assembly);
+
+        foreach (var entityType in entityTypes)
+        {
+            var repositoryType = typeof(EfRepository<>).MakeGenericType(entityType);
+            services.AddScoped(repositoryType);
+
+            var repositoryInterfaceType = typeof(IRepository<,>).MakeGenericType(entityType, typeof(long));
+            var efRepositoryInterfaceType = typeof(IEfRepository<,>).MakeGenericType(entityType, typeof(long));
+
+            services.AddScoped(repositoryInterfaceType, sp => sp.GetRequiredService(repositoryType));
+            services.AddScoped(efRepositoryInterfaceType, sp => sp.GetRequiredService(repositoryType));
+        }
     }
 }

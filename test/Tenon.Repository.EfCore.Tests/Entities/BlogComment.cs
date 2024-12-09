@@ -5,7 +5,7 @@ namespace Tenon.Repository.EfCore.Tests.Entities;
 /// <summary>
 /// 博客评论实体
 /// </summary>
-public class BlogComment : EfEntity
+public class BlogComment : EfFullAuditableEntity
 {
     /// <summary>
     /// 博客ID
@@ -38,11 +38,6 @@ public class BlogComment : EfEntity
     public long? ParentId { get; set; }
 
     /// <summary>
-    /// 关联的博客
-    /// </summary>
-    public virtual Blog Blog { get; set; } = null!;
-
-    /// <summary>
     /// 父评论
     /// </summary>
     public virtual BlogComment? Parent { get; set; }
@@ -51,4 +46,9 @@ public class BlogComment : EfEntity
     /// 子评论
     /// </summary>
     public virtual ICollection<BlogComment> Children { get; set; } = new List<BlogComment>();
+
+    /// <summary>
+    /// 博客
+    /// </summary>
+    public virtual Blog Blog { get; set; } = null!;
 } 

@@ -5,7 +5,7 @@ namespace Tenon.Repository.EfCore.Tests.Entities;
 /// <summary>
 /// 博客标签实体
 /// </summary>
-public class BlogTag : EfEntity
+public class BlogTag : EfBasicAuditEntity
 {
     /// <summary>
     /// 标签名称
@@ -23,7 +23,7 @@ public class BlogTag : EfEntity
     public int UsageCount { get; set; }
 
     /// <summary>
-    /// 关联的博客
+    /// 博客
     /// </summary>
     public virtual ICollection<Blog> Blogs { get; set; } = new List<Blog>();
 } 

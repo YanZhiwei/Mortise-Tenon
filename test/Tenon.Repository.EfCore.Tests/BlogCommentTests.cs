@@ -33,6 +33,70 @@ public class BlogCommentTests : TestBase
         Assert.IsNotNull(savedComment);
         Assert.AreEqual(comment.Content, savedComment.Content);
         Assert.AreEqual(comment.Commenter, savedComment.Commenter);
+        Assert.AreEqual(1, savedComment.CreatedBy);
+        Assert.IsTrue(savedComment.CreatedAt > DateTimeOffset.MinValue);
+        Assert.IsFalse(savedComment.IsDeleted);
+        Assert.IsNull(savedComment.UpdatedAt);
+        Assert.IsNull(savedComment.UpdatedBy);
+        Assert.IsNull(savedComment.DeletedAt);
+        Assert.IsNull(savedComment.DeletedBy);
+    }
+
+    /// <summary>
+    /// 测试更新评论
+    /// </summary>
+    [TestMethod]
+    public async Task UpdateComment_ShouldUpdateAuditFields()
+    {
+        // Arrange
+        var comment = await BlogCommentEfRepo.GetAsync(1, noTracking: false, token: default);
+        Assert.IsNotNull(comment);
+
+        var originalCreatedAt = comment.CreatedAt;
+        var originalCreatedBy = comment.CreatedBy;
+
+        // Act
+        comment.Content = "更新后的评论内容";
+        await BlogCommentEfRepo.UpdateAsync(comment, token: default);
+
+        // Assert
+        var updatedComment = await BlogCommentEfRepo.GetAsync(1, token: default);
+        Assert.IsNotNull(updatedComment);
+        Assert.AreEqual("更新后的评论内容", updatedComment.Content);
+        Assert.AreEqual(originalCreatedAt, updatedComment.CreatedAt);
+        Assert.AreEqual(originalCreatedBy, updatedComment.CreatedBy);
+        Assert.IsTrue(updatedComment.UpdatedAt.HasValue);
+        Assert.AreEqual(1, updatedComment.UpdatedBy);
+        Assert.IsFalse(updatedComment.IsDeleted);
+        Assert.IsNull(updatedComment.DeletedAt);
+        Assert.IsNull(updatedComment.DeletedBy);
+    }
+
+    /// <summary>
+    /// 测试软删除评论
+    /// </summary>
+    [TestMethod]
+    public async Task SoftDeleteComment_ShouldSetDeleteFields()
+    {
+        // Arrange
+        var comment = await BlogCommentEfRepo.GetAsync(1, noTracking: false, token: default);
+        Assert.IsNotNull(comment);
+
+        var originalCreatedAt = comment.CreatedAt;
+        var originalCreatedBy = comment.CreatedBy;
+
+        // Act
+        comment.IsDeleted = true;
+        await BlogCommentEfRepo.UpdateAsync(comment, token: default);
+
+        // Assert
+        var deletedComment = await DbContext.BlogComments.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == 1);
+        Assert.IsNotNull(deletedComment);
+        Assert.IsTrue(deletedComment.IsDeleted);
+        Assert.AreEqual(originalCreatedAt, deletedComment.CreatedAt);
+        Assert.AreEqual(originalCreatedBy, deletedComment.CreatedBy);
+        Assert.IsTrue(deletedComment.DeletedAt.HasValue);
+        Assert.AreEqual(1, deletedComment.DeletedBy);
     }
 
     /// <summary>
@@ -48,25 +112,27 @@ public class BlogCommentTests : TestBase
         var childComment = new BlogComment
         {
             BlogId = parentComment.BlogId,
-            Content = "这是一条回复评论",
-            Commenter = "回复者",
+            Content = "这是一条子评论",
+            Commenter = "子评论者",
             CommentTime = DateTime.Now,
             ParentId = parentComment.Id
         };
 
         // Act
         await BlogCommentEfRepo.InsertAsync(childComment, token: default);
-        
-        // 使用 Include 加载父评论和子评论
-        var savedComment = await DbContext.BlogComments
-            .Include(c => c.Parent)
-            .Include(c => c.Children)
-            .FirstOrDefaultAsync(c => c.Id == childComment.Id);
 
         // Assert
+        var savedComment = await BlogCommentEfRepo.GetAsync(childComment.Id, token: default);
         Assert.IsNotNull(savedComment);
-        Assert.IsNotNull(savedComment.Parent);
-        Assert.AreEqual(parentComment.Id, savedComment.Parent.Id);
+        Assert.AreEqual(childComment.Content, savedComment.Content);
+        Assert.AreEqual(childComment.ParentId, savedComment.ParentId);
+        Assert.AreEqual(1, savedComment.CreatedBy);
+        Assert.IsTrue(savedComment.CreatedAt > DateTimeOffset.MinValue);
+        Assert.IsFalse(savedComment.IsDeleted);
+        Assert.IsNull(savedComment.UpdatedAt);
+        Assert.IsNull(savedComment.UpdatedBy);
+        Assert.IsNull(savedComment.DeletedAt);
+        Assert.IsNull(savedComment.DeletedBy);
     }
 
     /// <summary>
@@ -91,57 +157,53 @@ public class BlogCommentTests : TestBase
     }
 
     /// <summary>
-    /// 测试更新评论
-    /// </summary>
-    [TestMethod]
-    public async Task UpdateComment_ShouldUpdateSuccessfully()
-    {
-        // Arrange
-        var comment = await BlogCommentEfRepo.GetAsync(1, noTracking: false, token: default);
-        Assert.IsNotNull(comment);
-
-        // Act
-        comment.Content = "更新后的评论内容";
-        comment.LikeCount += 1;
-        await BlogCommentEfRepo.UpdateAsync(comment, token: default);
-
-        // 重新获取评论进行验证（使用无跟踪查询）
-        var updatedComment = await BlogCommentEfRepo.GetAsync(comment.Id, noTracking: true, token: default);
-
-        // Assert
-        Assert.IsNotNull(updatedComment);
-        Assert.AreEqual("更新后的评论内容", updatedComment.Content);
-        Assert.AreEqual(comment.LikeCount, updatedComment.LikeCount);
-    }
-
-    /// <summary>
     /// 测试删除评论（包括子评论）
     /// </summary>
     [TestMethod]
     public async Task DeleteComment_ShouldDeleteWithChildren()
     {
         // Arrange
-        var parentComment = await DbContext.BlogComments
-            .Include(c => c.Children)
-            .FirstAsync(c => c.Children.Any());
+        var parentComment = await BlogCommentEfRepo.GetAsync(1, noTracking: false, token: default);
+        Assert.IsNotNull(parentComment);
 
-        var childrenIds = parentComment.Children.Select(c => c.Id).ToList();
-        Assert.IsTrue(childrenIds.Count > 0, "测试数据中应该包含子评论");
+        // 确保父评论有子评论
+        var childComments = await DbContext.BlogComments
+            .Where(c => c.ParentId == parentComment.Id)
+            .ToListAsync();
+        Assert.IsTrue(childComments.Count > 0, "父评论应该有子评论");
 
         // Act
-        DbContext.BlogComments.Remove(parentComment);
-        await DbContext.SaveChangesAsync();
+        parentComment.IsDeleted = true;
+        await BlogCommentEfRepo.UpdateAsync(parentComment, token: default);
 
         // Assert
-        var deletedParent = await BlogCommentEfRepo.GetAsync(parentComment.Id, token: default);
-        Assert.IsNull(deletedParent, "父评论应该被删除");
+        // 使用 GetAsync 方法验证评论是否被软删除（应该查不到）
+        var deletedParentComment = await BlogCommentEfRepo.GetAsync(parentComment.Id, token: default);
+        Assert.IsNull(deletedParentComment, "父评论应该被删除");
 
-        // 验证子评论也被删除
-        foreach (var childId in childrenIds)
-        {
-            var deletedChild = await BlogCommentEfRepo.GetAsync(childId, token: default);
-            Assert.IsNull(deletedChild, $"子评论 {childId} 应该被删除");
-        }
+        // 使用 IgnoreQueryFilters 验证评论是否真实存在但被标记为删除
+        var softDeletedParentComment = await DbContext.BlogComments
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(c => c.Id == parentComment.Id);
+        Assert.IsNotNull(softDeletedParentComment, "父评论应该存在但被标记为删除");
+        Assert.IsTrue(softDeletedParentComment.IsDeleted, "父评论应该被标记为删除");
+        Assert.IsTrue(softDeletedParentComment.DeletedAt.HasValue, "父评论的删除时间应该被设置");
+        Assert.AreEqual(1, softDeletedParentComment.DeletedBy, "父评论的删除者应该被设置");
+
+        // 验证子评论是否也被软删除
+        var remainingChildComments = await BlogCommentEfRepo.GetListAsync(
+            c => c.ParentId == parentComment.Id,
+            token: default);
+        Assert.IsFalse(remainingChildComments.Any(), "子评论应该被删除");
+
+        // 验证子评论是否真实存在但被标记为删除
+        var softDeletedChildComments = await DbContext.BlogComments
+            .IgnoreQueryFilters()
+            .Where(c => c.ParentId == parentComment.Id)
+            .ToListAsync();
+        Assert.IsTrue(softDeletedChildComments.All(c => c.IsDeleted), "所有子评论都应该被标记为删除");
+        Assert.IsTrue(softDeletedChildComments.All(c => c.DeletedAt.HasValue), "所有子评论的删除时间都应该被设置");
+        Assert.IsTrue(softDeletedChildComments.All(c => c.DeletedBy == 1), "所有子评论的删除者都应该被设置");
     }
 
     /// <summary>
@@ -182,4 +244,4 @@ public class BlogCommentTests : TestBase
             Assert.IsTrue(comments[i - 1].CommentTime >= comments[i].CommentTime);
         }
     }
-} 
+}

@@ -5,7 +5,7 @@ namespace Tenon.Repository.EfCore.Tests.Entities;
 /// <summary>
 /// 博客实体
 /// </summary>
-public class Blog : EfEntity
+public class Blog : EfFullAuditableEntity
 {
     /// <summary>
     /// 标题
