@@ -38,7 +38,6 @@ public class BlogDbContext : TenonDbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
-        optionsBuilder.AddInterceptors(new CommentSoftDeleteInterceptor());
         optionsBuilder.AddInterceptors(new BlogSoftDeleteInterceptor());
     }
 } 
