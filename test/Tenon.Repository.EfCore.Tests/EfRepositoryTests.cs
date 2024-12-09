@@ -534,4 +534,116 @@ public class EfRepositoryTests : TestBase
         Assert.IsNotNull(results);
         Assert.AreEqual(0, results.Count());
     }
+
+    /// <summary>
+    /// 测试更新未跟踪的实体
+    /// </summary>
+    [TestMethod]
+    public async Task UpdateAsync_WithUnTrackedEntity_ShouldThrowException()
+    {
+        // Arrange
+        var blog = new Blog
+        {
+            Id = 1,
+            Title = "未跟踪的博客",
+            Content = "测试内容",
+            PublishTime = DateTime.Now
+        };
+
+        // Act & Assert
+        await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () =>
+        {
+            await BlogEfRepo.UpdateAsync(blog);
+        });
+    }
+
+    /// <summary>
+    /// 测试批量更新部分存在的实体
+    /// </summary>
+    [TestMethod]
+    public async Task UpdateAsync_WithPartialExistingEntities_ShouldUpdateExistingOnes()
+    {
+        // Arrange
+        var blogs = new List<Blog>
+        {
+            new() { Title = "原始博客1", Content = "内容1", PublishTime = DateTime.Now },
+            new() { Title = "原始博客2", Content = "内容2", PublishTime = DateTime.Now }
+        };
+        await BlogEfRepo.InsertAsync(blogs);
+
+        var existingBlog = blogs[0];
+        existingBlog.Title = "更新后的博客1";
+        
+        var trackedEntities = new List<Blog> { existingBlog };
+        await BlogEfRepo.UpdateAsync(trackedEntities);
+
+        // Act
+        var updatedBlog = await BlogEfRepo.GetAsync(existingBlog.Id, default);
+
+        // Assert
+        Assert.IsNotNull(updatedBlog);
+        Assert.AreEqual("更新后的博客1", updatedBlog.Title);
+    }
+
+    /// <summary>
+    /// 测试更新实体的所有属性
+    /// </summary>
+    [TestMethod]
+    public async Task UpdateAsync_WithAllPropertiesChanged_ShouldUpdateAllProperties()
+    {
+        // Arrange
+        var originalBlog = new Blog
+        {
+            Title = "原始标题",
+            Content = "原始内容",
+            PublishTime = DateTime.Now.AddDays(-1)
+        };
+        await BlogEfRepo.InsertAsync(originalBlog);
+
+        var updatedTime = DateTime.Now;
+        originalBlog.Title = "新标题";
+        originalBlog.Content = "新内容";
+        originalBlog.PublishTime = updatedTime;
+
+        // Act
+        await BlogEfRepo.UpdateAsync(originalBlog);
+        var result = await BlogEfRepo.GetAsync(originalBlog.Id, default);
+
+        // Assert
+        Assert.IsNotNull(result);
+        Assert.AreEqual("新标题", result.Title);
+        Assert.AreEqual("新内容", result.Content);
+        Assert.AreEqual(updatedTime.Date, result.PublishTime.Date);
+    }
+
+    /// <summary>
+    /// 测试并发更新同一实体
+    /// </summary>
+    [TestMethod]
+    public async Task UpdateAsync_WithConcurrentUpdates_ShouldHandleLastWriteWins()
+    {
+        // Arrange
+        var blog = new Blog
+        {
+            Title = "原始标题",
+            Content = "原始内容",
+            PublishTime = DateTime.Now
+        };
+        await BlogEfRepo.InsertAsync(blog);
+
+        // 第一次更新
+        blog.Title = "第一次更新";
+        await BlogEfRepo.UpdateAsync(blog);
+
+        // 第二次更新
+        blog.Title = "第二次更新";
+        await BlogEfRepo.UpdateAsync(blog);
+
+        // Act
+        var result = await BlogEfRepo.GetAsync(blog.Id, default);
+
+        // Assert
+        Assert.IsNotNull(result);
+        Assert.AreEqual("第二次更新", result.Title);
+    }
 }
