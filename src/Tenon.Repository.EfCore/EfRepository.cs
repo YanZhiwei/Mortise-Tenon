@@ -41,15 +41,15 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
     /// 异步获取列表
     /// </summary>
     /// <param name="whereExpression">查询条件表达式</param>
-    /// <param name="includeExpression">包含的导航属性</param>
+    /// <param name="navigationPropertyPath">包含的导航属性</param>
     /// <param name="noTracking">是否不追踪实体</param>
     /// <param name="token">取消令牌</param>
     public virtual async Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> whereExpression,
-        Expression<Func<TEntity, dynamic>>? includeExpression = null,
+        Expression<Func<TEntity, dynamic>>? navigationPropertyPath = null,
         bool noTracking = true, CancellationToken token = default)
     {
         var query = whereExpression != null ? GetDbSet(noTracking).Where(whereExpression) : GetDbSet(noTracking);
-        if (includeExpression != null) query = query.Include(includeExpression);
+        if (navigationPropertyPath != null) query = query.Include(navigationPropertyPath);
         return await query.ToListAsync(token).ConfigureAwait(false);
     }
 
@@ -96,7 +96,7 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
         bool noTracking = true, CancellationToken token = default)
     {
         if (navigationPropertyPath != null)
-            return await GetWithNavigationPropertiesAsync(keyValue, new[] { navigationPropertyPath }, noTracking, token)
+            return await GetWithNavigationPropertiesAsync(keyValue, [navigationPropertyPath], noTracking, token)
                 .ConfigureAwait(false);
         return await GetAsync(keyValue, noTracking, token).ConfigureAwait(false);
     }
