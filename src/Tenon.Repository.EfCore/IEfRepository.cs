@@ -20,6 +20,19 @@ public interface IEfRepository<TEntity, in TKey> where TEntity : IEntity<TKey>
         Expression<Func<TEntity, dynamic>>? navigationPropertyPath = null, bool noTracking = true,
         CancellationToken token = default);
 
+    
+    /// <summary>
+    /// 异步获取符合条件的列表，并包含指定的导航属性
+    /// </summary>
+    /// <param name="whereExpression">查询条件</param>
+    /// <param name="navigationPropertyPaths">要包含的导航属性路径</param>
+    /// <param name="noTracking">是否不追踪</param>
+    /// <param name="token">取消令牌</param>
+    Task<IEnumerable<TEntity>> GetListWithNavigationPropertiesAsync(Expression<Func<TEntity, bool>> whereExpression, 
+        IEnumerable<Expression<Func<TEntity, dynamic>>>? navigationPropertyPaths = null, bool noTracking = true,
+        CancellationToken token = default);
+
+
     /// <summary>
     /// 异步根据主键获取实体
     /// </summary>
@@ -45,4 +58,18 @@ public interface IEfRepository<TEntity, in TKey> where TEntity : IEntity<TKey>
     /// 获取所有实体
     /// </summary>
     IQueryable<TEntity> GetAll(bool noTracking = true);
+
+    /// <summary>
+    /// 异步获取分页列表
+    /// </summary>
+    /// <param name="whereExpression">查询条件</param>
+    /// <param name="pageIndex">当前页索引</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="includeProperties">包含的导航属性</param>
+    /// <param name="noTracking">是否不追踪</param>
+    /// <param name="token">取消令牌</param>
+    Task<PagedResult<TEntity>> GetPagedListAsync(Expression<Func<TEntity, bool>> whereExpression, 
+        int pageIndex, int pageSize, 
+        IEnumerable<Expression<Func<TEntity, dynamic>>>? includeProperties = null, bool noTracking = true,
+        CancellationToken token = default);
 }

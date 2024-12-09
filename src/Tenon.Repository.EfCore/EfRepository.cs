@@ -53,6 +53,26 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
         return await query.ToListAsync(token).ConfigureAwait(false);
     }
 
+
+    /// <summary>
+    /// 异步获取符合条件的列表，并包含指定的导航属性
+    /// </summary>
+    /// <param name="whereExpression">查询条件</param>
+    /// <param name="navigationPropertyPaths">要包含的导航属性路径</param>
+    /// <param name="noTracking">是否不追踪</param>
+    /// <param name="token">取消令牌</param>
+    public async Task<IEnumerable<TEntity>> GetListWithNavigationPropertiesAsync(
+        Expression<Func<TEntity, bool>> whereExpression,
+        IEnumerable<Expression<Func<TEntity, dynamic>>>? navigationPropertyPaths = null,
+        bool noTracking = true, CancellationToken token = default)
+    {
+        var query = whereExpression != null ? GetDbSet(noTracking).Where(whereExpression) : GetDbSet(noTracking);
+        if (navigationPropertyPaths != null)
+            foreach (var navigationPath in navigationPropertyPaths)
+                query = query.Include(navigationPath);
+        return await query.ToListAsync(token).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// 异步根据主键获取实体
     /// </summary>
@@ -108,6 +128,39 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
     public virtual IQueryable<TEntity> GetAll(bool noTracking = true)
     {
         return GetDbSet(noTracking);
+    }
+
+    /// <summary>
+    /// 异步获取分页列表
+    /// </summary>
+    /// <param name="whereExpression">查询条件表达式</param>
+    /// <param name="pageIndex">当前页索引</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="includeProperties">要包含的导航属性路径</param>
+    /// <param name="noTracking">是否不追踪实体</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>分页结果</returns>
+    public async Task<PagedResult<TEntity>> GetPagedListAsync(Expression<Func<TEntity, bool>> whereExpression,
+        int pageIndex, int pageSize, IEnumerable<Expression<Func<TEntity, dynamic>>>? includeProperties = null,
+        bool noTracking = true, CancellationToken token = default)
+    {
+        var query = whereExpression != null ? GetDbSet(noTracking).Where(whereExpression) : GetDbSet(noTracking);
+
+        if (includeProperties != null)
+            foreach (var includeProperty in includeProperties)
+                query = query.Include(includeProperty);
+
+        var totalCount = await query.CountAsync(token).ConfigureAwait(false);
+        var items = await query.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync(token)
+            .ConfigureAwait(false);
+
+        return new PagedResult<TEntity>
+        {
+            TotalCount = totalCount,
+            Items = items,
+            PageIndex = pageIndex,
+            PageSize = pageSize
+        };
     }
 
     /// <summary>
@@ -296,7 +349,7 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
     public virtual async Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> whereExpression,
         CancellationToken token = default)
     {
-        var result = await GetListAsync(whereExpression, null,true, token);
+        var result = await GetListAsync(whereExpression, null, true, token);
         return result;
     }
 
