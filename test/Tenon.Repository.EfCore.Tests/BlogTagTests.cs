@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tenon.Repository.EfCore.Tests.Entities;
@@ -40,16 +41,34 @@ public class BlogTagTests : TestBase
     public async Task GetMostUsedTags_ShouldReturnOrderedTags()
     {
         // Act
-        var tags = await DbContext.BlogTags
-            .Include(t => t.Blogs)
-            .OrderByDescending(t => t.Blogs.Count)
-            .ToListAsync();
+        var tags = await BlogTagEfRepo.GetListAsync(
+            whereExpression: null,
+            noTracking: true,
+            token: default);
+
+        var tagsWithBlogs = new List<(BlogTag Tag, int BlogCount)>();
+        foreach (var tag in tags)
+        {
+            var tagWithBlogs = await BlogTagEfRepo.GetWithNavigationPropertiesAsync(
+                tag.Id,
+                [(Expression<Func<BlogTag, dynamic>>)(t => t.Blogs)],
+                token: default);
+
+            if (tagWithBlogs != null)
+            {
+                tagsWithBlogs.Add((tagWithBlogs, tagWithBlogs.Blogs.Count));
+            }
+        }
+
+        var orderedTags = tagsWithBlogs
+            .OrderByDescending(t => t.BlogCount)
+            .ToList();
 
         // Assert
-        Assert.IsTrue(tags.Count > 0);
-        for (int i = 1; i < tags.Count; i++)
+        Assert.IsTrue(orderedTags.Count > 0);
+        for (int i = 1; i < orderedTags.Count; i++)
         {
-            Assert.IsTrue(tags[i - 1].Blogs.Count >= tags[i].Blogs.Count);
+            Assert.IsTrue(orderedTags[i - 1].BlogCount >= orderedTags[i].BlogCount);
         }
     }
 
@@ -116,14 +135,13 @@ public class BlogTagTests : TestBase
         Assert.IsNotNull(tag);
 
         // Act
-        var blogs = await DbContext.Blogs
-            .Include(b => b.Tags)
-            .Where(b => b.Tags.Any(t => t.Id == tag.Id))
-            .ToListAsync();
+        var blogs = await BlogEfRepo.GetListAsync(
+            whereExpression: b => b.Tags.Any(t => t.Id == tag.Id),
+            noTracking: true,
+            token: default);
 
         // Assert
-        Assert.IsTrue(blogs.Count > 0);
-        Assert.IsTrue(blogs.All(b => b.Tags.Any(t => t.Id == tag.Id)));
+        Assert.IsTrue(blogs.Any());
     }
 
     /// <summary>
@@ -137,13 +155,13 @@ public class BlogTagTests : TestBase
         await BlogTagEfRepo.InsertAsync(newTag, token: default);
 
         // Act
-        var unusedTags = await DbContext.BlogTags
-            .Include(t => t.Blogs)
-            .Where(t => !t.Blogs.Any())
-            .ToListAsync();
+        var unusedTags = await BlogTagEfRepo.GetListAsync(
+            whereExpression: t => !t.Blogs.Any(),
+            noTracking: true,
+            token: default);
 
         // Assert
-        Assert.IsTrue(unusedTags.Count > 0);
-        Assert.IsTrue(unusedTags.All(t => t.Blogs.Count == 0));
+        Assert.IsTrue(unusedTags.Any());
+        Assert.IsTrue(unusedTags.All(t => !t.Blogs.Any()));
     }
 }

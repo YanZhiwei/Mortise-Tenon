@@ -32,18 +32,11 @@ public abstract class TestBase
             .AddJsonFile("appsettings.json", false, true)
             .Build();
 
-        // 配置数据库
-        services.AddDbContext<BlogDbContext>(options =>
-            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
-
         // 配置日志
         services.AddLogging(builder => builder.AddConsole());
 
-        // 注册 DbContext 作为基类
-        services.AddScoped<DbContext>(sp => sp.GetRequiredService<BlogDbContext>());
-
         // 注册 EfAuditableUser
-        services.AddScoped<EfAuditableUser>(_ => new EfAuditableUser { User = 1 });
+        services.AddScoped<EfUserAuditInfo>(_ => new EfUserAuditInfo { UserId = 1 });
 
         // 使用 AddEfCore 扩展方法注册仓储和 DbContext
         services.AddEfCore<BlogDbContext, TestUnitOfWork>(

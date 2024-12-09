@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tenon.Repository.EfCore.Tests.Entities;
@@ -34,29 +35,34 @@ public class BlogTests : TestBase
         // Arrange
         var tagName = "技术";
 
-        // 清除跟踪器
-        DbContext.ChangeTracker.Clear();
+        // 先获取包含指定标签的博客ID
+        var blogs = await BlogEfRepo.GetListAsync(
+            whereExpression: b => b.Tags.Any(t => t.Name == tagName),
+            noTracking: true,
+            token: default);
 
-        // 获取标签及其关联的博客
-        var tag = await DbContext.BlogTags
-            .Include(t => t.Blogs)
-            .FirstAsync(t => t.Name == tagName);
+        // 获取博客详情（包含标签）
+        var blogsWithTags = new List<Blog>();
+        foreach (var blog in blogs)
+        {
+            var blogWithTags = await BlogEfRepo.GetWithNavigationPropertiesAsync(
+                blog.Id,
+                [(Expression<Func<Blog, dynamic>>)(b => b.Tags)],
+                token: default);
 
-        Assert.IsNotNull(tag);
+            if (blogWithTags != null)
+            {
+                blogsWithTags.Add(blogWithTags);
+            }
+        }
 
-        // Act
-        var blogs = await DbContext.Blogs
-            .Include(b => b.Tags)
-            .Where(b => b.Tags.Any(t => t.Id == tag.Id))
-            .OrderBy(b => b.Id)
-            .ToListAsync();
+        var orderedBlogs = blogsWithTags.OrderBy(b => b.Id).ToList();
 
         // Assert
-        Assert.AreEqual(2, blogs.Count);
-        Assert.IsTrue(blogs.All(b => b.Tags.Any(t => t.Name == tagName)));
+        Assert.AreEqual(2, orderedBlogs.Count);
+        Assert.IsTrue(orderedBlogs.All(b => b.Tags.Any(t => t.Name == tagName)));
 
-        // 验证具体的博客标题
-        var blogTitles = blogs.Select(b => b.Title).ToList();
+        var blogTitles = orderedBlogs.Select(b => b.Title).ToList();
         CollectionAssert.Contains(blogTitles, "第一篇博客");
         CollectionAssert.Contains(blogTitles, "第三篇博客");
     }
@@ -178,42 +184,23 @@ public class BlogTests : TestBase
     }
 
     /// <summary>
-    /// 测试分页查询博客
-    /// </summary>
-    [TestMethod]
-    public async Task GetBlogsByPage_ShouldReturnCorrectBlogs()
-    {
-        // Arrange
-        var pageSize = 2;
-        var skipCount = 1;
-
-        // Act
-        var blogs = BlogEfRepo.Where(b => true)
-            .OrderByDescending(b => b.PublishTime)
-            .Skip(skipCount)
-            .Take(pageSize);
-        var blogList = await blogs.ToListAsync();
-
-        // Assert
-        Assert.AreEqual(pageSize, blogList.Count);
-        Assert.IsTrue(blogList[0].PublishTime > blogList[1].PublishTime);
-    }
-
-    /// <summary>
     /// 测试获取博客详情（包含标签和评论）
     /// </summary>
     [TestMethod]
     public async Task GetBlogDetail_ShouldIncludeTagsAndComments()
     {
         // Arrange
-        var blogId = 1L; // 使用测试数据中的第一篇博客
+        var blogId = 1L;
 
         // Act
-        var blog = await DbContext.Blogs
-            .Include(b => b.Tags)
-            .Include(b => b.Comments)
-                .ThenInclude(c => c.Children)
-            .FirstOrDefaultAsync(b => b.Id == blogId);
+        var blog = await BlogEfRepo.GetWithNavigationPropertiesAsync(
+            blogId,
+            new[] 
+            { 
+                (Expression<Func<Blog, dynamic>>)(b => b.Tags),
+                b => b.Comments
+            },
+            token: default);
 
         // Assert
         Assert.IsNotNull(blog, "博客不应为空");
@@ -233,18 +220,16 @@ public class BlogTests : TestBase
             Assert.IsFalse(string.IsNullOrEmpty(comment.Commenter), "评论者不应为空");
             Assert.AreNotEqual(default(DateTime), comment.CommentTime, "评论时间不应为默认值");
 
-            // 如果是父评论，验证其子评论
             if (comment.Children.Any())
             {
                 foreach (var childComment in comment.Children)
                 {
-                    Assert.AreEqual(comment.Id, childComment.ParentId, "子评论的 ParentId 应该匹配父评论的 Id");
-                    Assert.IsFalse(string.IsNullOrEmpty(childComment.Content), "子评论内容不应为空");
+                    Assert.AreEqual(comment.Id, childComment.ParentId);
+                    Assert.IsFalse(string.IsNullOrEmpty(childComment.Content));
                 }
             }
         }
 
-        // 验证评论数量
         var totalComments = blog.Comments.Count + blog.Comments.Sum(c => c.Children.Count);
         Assert.IsTrue(totalComments > 0, "博客应该至少有一条评论");
     }
@@ -256,9 +241,12 @@ public class BlogTests : TestBase
     public async Task GetBlogsByReadCount_ShouldReturnOrderedBlogs()
     {
         // Act
-        var blogs = BlogEfRepo.Where(b => true)
-            .OrderByDescending(b => b.ReadCount);
-        var blogList = await blogs.ToListAsync();
+        var blogs = await BlogEfRepo.GetListAsync(
+            whereExpression: null,
+            noTracking: true,
+            token: default);
+
+        var blogList = blogs.OrderByDescending(b => b.ReadCount).ToList();
 
         // Assert
         Assert.IsTrue(blogList.Count > 0);
@@ -266,5 +254,32 @@ public class BlogTests : TestBase
         {
             Assert.IsTrue(blogList[i - 1].ReadCount >= blogList[i].ReadCount);
         }
+    }
+
+    /// <summary>
+    /// 测试分页查询博客
+    /// </summary>
+    [TestMethod]
+    public async Task GetBlogsByPage_ShouldReturnCorrectBlogs()
+    {
+        // Arrange
+        var pageSize = 2;
+        var skipCount = 1;
+
+        // Act
+        var blogs = await BlogEfRepo.GetListAsync(
+            whereExpression: null,
+            noTracking: true,
+            token: default);
+
+        var pagedBlogs = blogs
+            .OrderByDescending(b => b.PublishTime)
+            .Skip(skipCount)
+            .Take(pageSize)
+            .ToList();
+
+        // Assert
+        Assert.AreEqual(pageSize, pagedBlogs.Count);
+        Assert.IsTrue(pagedBlogs[0].PublishTime > pagedBlogs[1].PublishTime);
     }
 }

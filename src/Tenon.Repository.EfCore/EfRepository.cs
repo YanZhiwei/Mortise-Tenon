@@ -41,12 +41,34 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
     /// 异步获取列表
     /// </summary>
     /// <param name="whereExpression">查询条件表达式</param>
+    /// <param name="navigationPropertyPath">包含的导航属性</param>
     /// <param name="noTracking">是否不追踪实体</param>
     /// <param name="token">取消令牌</param>
     public virtual async Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> whereExpression,
+        Expression<Func<TEntity, dynamic>>? navigationPropertyPath = null,
         bool noTracking = true, CancellationToken token = default)
     {
         var query = whereExpression != null ? GetDbSet(noTracking).Where(whereExpression) : GetDbSet(noTracking);
+        if (navigationPropertyPath != null) query = query.Include(navigationPropertyPath);
+        return await query.ToListAsync(token).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 异步获取符合条件的列表，并包含指定的导航属性
+    /// </summary>
+    /// <param name="whereExpression">查询条件</param>
+    /// <param name="navigationPropertyPaths">要包含的导航属性路径</param>
+    /// <param name="noTracking">是否不追踪</param>
+    /// <param name="token">取消令牌</param>
+    public async Task<IEnumerable<TEntity>> GetListWithNavigationPropertiesAsync(
+        Expression<Func<TEntity, bool>> whereExpression,
+        IEnumerable<Expression<Func<TEntity, dynamic>>>? navigationPropertyPaths = null,
+        bool noTracking = true, CancellationToken token = default)
+    {
+        var query = whereExpression != null ? GetDbSet(noTracking).Where(whereExpression) : GetDbSet(noTracking);
+        if (navigationPropertyPaths != null)
+            foreach (var navigationPath in navigationPropertyPaths)
+                query = query.Include(navigationPath);
         return await query.ToListAsync(token).ConfigureAwait(false);
     }
 
@@ -76,10 +98,8 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
     {
         var query = GetDbSet(noTracking).Where(t => t.Id == keyValue);
         if (navigationPropertyPaths != null)
-        {
             foreach (var navigationPath in navigationPropertyPaths)
                 query = query.Include(navigationPath);
-        }
         return await query.FirstOrDefaultAsync(token).ConfigureAwait(false);
     }
 
@@ -90,13 +110,13 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
     /// <param name="navigationPropertyPath">导航属性路径</param>
     /// <param name="noTracking">是否不追踪实体</param>
     /// <param name="token">取消令牌</param>
-    public virtual async Task<TEntity?> GetAsync(long keyValue, Expression<Func<TEntity, dynamic>>? navigationPropertyPath = null,
+    public virtual async Task<TEntity?> GetAsync(long keyValue,
+        Expression<Func<TEntity, dynamic>>? navigationPropertyPath = null,
         bool noTracking = true, CancellationToken token = default)
     {
         if (navigationPropertyPath != null)
-        {
-            return await GetWithNavigationPropertiesAsync(keyValue, new[] { navigationPropertyPath }, noTracking, token).ConfigureAwait(false);
-        }
+            return await GetWithNavigationPropertiesAsync(keyValue, [navigationPropertyPath], noTracking, token)
+                .ConfigureAwait(false);
         return await GetAsync(keyValue, noTracking, token).ConfigureAwait(false);
     }
 
@@ -107,6 +127,40 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
     public virtual IQueryable<TEntity> GetAll(bool noTracking = true)
     {
         return GetDbSet(noTracking);
+    }
+
+    /// <summary>
+    /// 异步获取分页列表
+    /// </summary>
+    /// <param name="pageIndex">当前页索引</param>
+    /// <param name="pageSize">每页大小</param>
+    /// <param name="whereExpression">查询条件</param>
+    /// <param name="includeProperties">包含的导航属性</param>
+    /// <param name="noTracking">是否不追踪</param>
+    /// <param name="token">取消令牌</param>
+    public async Task<PagedResult<TEntity>> GetPagedListAsync(
+        int pageIndex, int pageSize,
+        Expression<Func<TEntity, bool>>? whereExpression = null,
+        IEnumerable<Expression<Func<TEntity, dynamic>>>? includeProperties = null,
+        bool noTracking = true, CancellationToken token = default)
+    {
+        var query = whereExpression != null ? GetDbSet(noTracking).Where(whereExpression) : GetDbSet(noTracking);
+
+        if (includeProperties != null)
+            foreach (var includeProperty in includeProperties)
+                query = query.Include(includeProperty);
+
+        var totalCount = await query.CountAsync(token).ConfigureAwait(false);
+        var items = await query.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync(token)
+            .ConfigureAwait(false);
+
+        return new PagedResult<TEntity>
+        {
+            TotalCount = totalCount,
+            Items = items,
+            PageIndex = pageIndex,
+            PageSize = pageSize
+        };
     }
 
     /// <summary>
@@ -218,8 +272,8 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
         {
             _logger.LogDebug("开始根据主键删除实体，主键值: {KeyValue}", keyValue);
             var entity = await DbContext.Set<TEntity>().AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id.Equals(keyValue), token).ConfigureAwait(false) ??
-                new TEntity { Id = keyValue };
+                             .FirstOrDefaultAsync(t => t.Id.Equals(keyValue), token).ConfigureAwait(false) ??
+                         new TEntity { Id = keyValue };
             DbContext.Remove(entity);
             var result = await DbContext.SaveChangesAsync(token).ConfigureAwait(false);
             _logger.LogDebug("成功删除实体，主键值: {KeyValue}", keyValue);
@@ -295,7 +349,7 @@ public class EfRepository<TEntity> : IRepository<TEntity, long>, IEfRepository<T
     public virtual async Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> whereExpression,
         CancellationToken token = default)
     {
-        var result = await GetListAsync(whereExpression, true, token);
+        var result = await GetListAsync(whereExpression, null, true, token);
         return result;
     }
 
