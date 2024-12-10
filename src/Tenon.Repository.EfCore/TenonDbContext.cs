@@ -27,5 +27,6 @@ public abstract class TenonDbContext : DbContext
 
         // 为所有实现了ISoftDelete的实体添加全局软删除过滤器
         modelBuilder.ApplySoftDeleteQueryFilter();
+
     }
 } 

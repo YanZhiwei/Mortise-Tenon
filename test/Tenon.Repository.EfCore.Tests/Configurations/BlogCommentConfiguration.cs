@@ -11,6 +11,7 @@ public class BlogCommentConfiguration : AbstractEntityTypeConfiguration<BlogComm
 {
     public override void Configure(EntityTypeBuilder<BlogComment> builder)
     {
+        base.Configure(builder);
         builder.Property(x => x.Content).IsRequired();
         builder.HasOne(x => x.Blog)
             .WithMany(x => x.Comments)
