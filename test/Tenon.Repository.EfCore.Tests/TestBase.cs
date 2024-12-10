@@ -21,8 +21,10 @@ public abstract class TestBase
     protected EfRepository<BlogTag> BlogTagEfRepo { get; private set; } = null!;
     protected EfRepository<BlogComment> BlogCommentEfRepo { get; private set; } = null!;
 
+    protected EfRepository<ConcurrentEntity> ConcurrentEfRepo { get; private set; } = null!;
+
     [TestInitialize]
-    public virtual void Setup()
+    public virtual async Task Setup()
     {
         var services = new ServiceCollection();
 
@@ -46,7 +48,7 @@ public abstract class TestBase
 
         var serviceProvider = services.BuildServiceProvider();
         InitializeServices(serviceProvider);
-        InitializeTestData();
+        await InitializeTestData();
     }
 
     /// <summary>
@@ -61,14 +63,15 @@ public abstract class TestBase
         BlogEfRepo = serviceProvider.GetRequiredService<EfRepository<Blog>>();
         BlogTagEfRepo = serviceProvider.GetRequiredService<EfRepository<BlogTag>>();
         BlogCommentEfRepo = serviceProvider.GetRequiredService<EfRepository<BlogComment>>();
+        ConcurrentEfRepo = serviceProvider.GetRequiredService<EfRepository<ConcurrentEntity>>();
     }
 
     /// <summary>
     ///     初始化测试数据
     /// </summary>
-    private void InitializeTestData()
+    private async Task InitializeTestData()
     {
-        var tags = InitializeBlogTags();
+        var tags = await InitializeBlogTags();
         var blogs = InitializeBlogs(tags);
         var comments = InitializeBlogComments(blogs);
         InitializeChildComments(blogs, comments);
@@ -77,7 +80,7 @@ public abstract class TestBase
     /// <summary>
     ///     初始化博客标签
     /// </summary>
-    private List<BlogTag> InitializeBlogTags()
+    private async Task<List<BlogTag>> InitializeBlogTags()
     {
         var now = DateTimeOffset.UtcNow;
         var tags = new List<BlogTag>
@@ -86,8 +89,7 @@ public abstract class TestBase
             new() { Name = "生活", Description = "生活随笔", CreatedAt = now },
             new() { Name = "编程", Description = "编程技巧", CreatedAt = now }
         };
-        DbContext.BlogTags.AddRange(tags);
-        DbContext.SaveChanges();
+        await BlogTagEfRepo.InsertAsync(tags);
         return tags;
     }
 
