@@ -171,6 +171,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tenon.AspNetCoreTests", "..
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tenon.Repository.EfCore.Tests", "..\test\Tenon.Repository.EfCore.Tests\Tenon.Repository.EfCore.Tests.csproj", "{CBD416B9-193D-4CB8-9DFC-FA8D63B88E12}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tenon.Serialization.Json.Tests", "..\test\Tenon.Serialization.Json.Tests\Tenon.Serialization.Json.Tests.csproj", "{2707E3D3-BA86-41CB-B654-043A10AD33E5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -457,6 +459,10 @@ Global
 		{CBD416B9-193D-4CB8-9DFC-FA8D63B88E12}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CBD416B9-193D-4CB8-9DFC-FA8D63B88E12}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CBD416B9-193D-4CB8-9DFC-FA8D63B88E12}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2707E3D3-BA86-41CB-B654-043A10AD33E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2707E3D3-BA86-41CB-B654-043A10AD33E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2707E3D3-BA86-41CB-B654-043A10AD33E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2707E3D3-BA86-41CB-B654-043A10AD33E5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -516,6 +522,7 @@ Global
 		{BAB0C50C-96CB-46CA-A17F-3E148CED419B} = {8F47DBC9-9B92-4C83-B058-EA0EF909FAA9}
 		{2F01A474-B29A-4196-A759-6AA12CED16DD} = {E105A163-9660-4A89-8CA9-C242762B8613}
 		{CBD416B9-193D-4CB8-9DFC-FA8D63B88E12} = {E105A163-9660-4A89-8CA9-C242762B8613}
+		{2707E3D3-BA86-41CB-B654-043A10AD33E5} = {E105A163-9660-4A89-8CA9-C242762B8613}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BD20DE54-1131-41A3-9F1B-37B742A8FA09}
