@@ -45,21 +45,23 @@ public static class ServiceCollectionExtension
     public static IServiceCollection AddRedisStackExchangeCache(this IServiceCollection services,
         IConfigurationSection redisSection, Action<CachingOptions>? setupAction = null)
     {
-        if (redisSection == null)
-            throw new ArgumentNullException(nameof(redisSection));
-        var redisConfig = redisSection.Get<RedisOptions>();
-        if (redisConfig == null)
-            throw new ArgumentNullException(nameof(redisConfig));
+        ArgumentNullException.ThrowIfNull(redisSection, nameof(redisSection));
+
+        var redisConfig = redisSection.Get<RedisOptions>()
+                          ?? throw new InvalidOperationException($"无法从配置节点 '{redisSection.Path}' 读取 Redis 配置");
+
         if (string.IsNullOrWhiteSpace(redisConfig.ConnectionString))
-            throw new ArgumentNullException(nameof(redisConfig.ConnectionString));
+            throw new InvalidOperationException("Redis 连接字符串不能为空");
+
         var options = new CachingOptions();
-        if (setupAction != null)
-            setupAction(options);
-        services.Configure<RedisOptions>(redisSection);
-        services.AddSystemTextJsonSerializer();
-        services.AddSingleton(options);
-        services.AddRedisStackExchangeProvider(redisSection);
-        services.TryAddSingleton<ICacheProvider, RedisCacheProvider>();
+        setupAction?.Invoke(options);
+
+        services.Configure<RedisOptions>(redisSection)
+            .AddSystemTextJsonSerializer()
+            .AddSingleton(options)
+            .AddRedisStackExchangeProvider(redisSection)
+            .TryAddSingleton<ICacheProvider, RedisCacheProvider>();
+
         return services;
     }
 }
