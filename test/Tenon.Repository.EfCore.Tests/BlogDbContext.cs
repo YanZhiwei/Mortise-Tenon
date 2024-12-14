@@ -44,5 +44,6 @@ public class BlogDbContext : TenonDbContext
         base.OnConfiguring(optionsBuilder);
         optionsBuilder.EnableSensitiveDataLogging();
         optionsBuilder.AddInterceptors(new BlogSoftDeleteInterceptor());
+
     }
 }
