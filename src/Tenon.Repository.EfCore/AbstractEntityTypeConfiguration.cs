@@ -27,12 +27,6 @@ public abstract class AbstractEntityTypeConfiguration<TEntity> : AbstractEntityT
 
     protected void ConfigureQueryFilter(EntityTypeBuilder<TEntity> builder, Type entityType)
     {
-        builder.HasKey(x => x.Id);
-        builder.Property(x => x.Id).HasColumnOrder(1).ValueGeneratedNever();
-    }
-
-    protected void ConfigureKey(EntityTypeBuilder<TEntity> builder, Type entityType)
-    {
         if (typeof(ISoftDelete).IsAssignableFrom(entityType))
         {
             builder.Property(nameof(ISoftDelete.IsDeleted))
@@ -40,6 +34,14 @@ public abstract class AbstractEntityTypeConfiguration<TEntity> : AbstractEntityT
                 .HasColumnOrder(2);
             builder.HasQueryFilter(d => !EF.Property<bool>(d, nameof(ISoftDelete.IsDeleted)));
         }
+    }
+
+    protected void ConfigureKey(EntityTypeBuilder<TEntity> builder, Type entityType)
+    {
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id)
+            .HasColumnOrder(1)
+            .ValueGeneratedOnAdd();
     }
 
     protected void ConfigureConcurrency(EntityTypeBuilder<TEntity> builder, Type entityType)
