@@ -14,6 +14,8 @@ namespace Tenon.Repository.EfCore.Tests;
 public abstract class TestBase
 {
     private const string DbFileName = "test.db";
+    private static readonly object _lock = new();
+    private static bool _databaseInitialized;
 
     public required ILogger<EfRepository<BlogComment>> BlogCommentLogger { get; set; }
     public required ILogger<EfRepository<Blog>> BlogLogger { get; set; }
@@ -27,8 +29,7 @@ public abstract class TestBase
     [TestInitialize]
     public virtual async Task Setup()
     {
-        // 删除可能存在的旧数据库文件
-        if (File.Exists(DbFileName)) File.Delete(DbFileName);
+        await CleanupDatabase();
 
         var services = new ServiceCollection();
 
@@ -49,7 +50,11 @@ public abstract class TestBase
         // 使用 AddEfCore 扩展方法注册仓储和 DbContext
         services.AddEfCore<BlogDbContext, TestUnitOfWork>(
             configuration.GetSection("Database"),
-            options => options.UseSqlite(configuration.GetSection("Database:ConnectionString").Value)
+            options =>
+            {
+                options.UseSqlite($"Data Source={DbFileName}");
+                options.EnableSensitiveDataLogging();
+            }
         );
 
         var serviceProvider = services.BuildServiceProvider();
@@ -57,12 +62,13 @@ public abstract class TestBase
     }
 
     [TestCleanup]
-    public virtual void Cleanup()
+    public virtual async Task Cleanup()
     {
-        DbContext.Dispose();
-
-        // 清理数据库文件
-        if (File.Exists(DbFileName)) File.Delete(DbFileName);
+        if (DbContext != null)
+        {
+            await CleanupDatabase();
+            await DbContext.DisposeAsync();
+        }
     }
 
     /// <summary>
@@ -79,7 +85,81 @@ public abstract class TestBase
         BlogCommentEfRepo = serviceProvider.GetRequiredService<EfRepository<BlogComment>>();
         ConcurrentEfRepo = serviceProvider.GetRequiredService<EfRepository<ConcurrentEntity>>();
 
-        // 确保数据库已创建
-        await DbContext.Database.EnsureCreatedAsync();
+        lock (_lock)
+        {
+            if (!_databaseInitialized)
+            {
+                // 删除现有数据库
+                if (File.Exists(DbFileName))
+                {
+                    try
+                    {
+                        File.Delete(DbFileName);
+                    }
+                    catch (IOException)
+                    {
+                        // 忽略文件被占用的异常
+                    }
+                }
+
+                // 确保数据库已创建
+                DbContext.Database.EnsureCreated();
+                _databaseInitialized = true;
+            }
+        }
+
+        // 清理所有数据
+        await CleanupDatabaseData();
+    }
+
+    /// <summary>
+    ///     清理数据库
+    /// </summary>
+    private async Task CleanupDatabase()
+    {
+        if (DbContext != null)
+        {
+            try
+            {
+                await CleanupDatabaseData();
+            }
+            finally
+            {
+                DbContext.ChangeTracker.Clear();
+            }
+        }
+    }
+
+    /// <summary>
+    ///     清理数据库数据
+    /// </summary>
+    private async Task CleanupDatabaseData()
+    {
+        // 使用事务确保原子性
+        await using var transaction = await DbContext.Database.BeginTransactionAsync();
+        try
+        {
+            // 禁用外键约束
+            await DbContext.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys = OFF;");
+
+            // 删除所有表数据
+            await DbContext.Database.ExecuteSqlRawAsync("DELETE FROM BlogBlogTag");
+            await DbContext.Database.ExecuteSqlRawAsync("DELETE FROM BlogComments");
+            await DbContext.Database.ExecuteSqlRawAsync("DELETE FROM BlogTags");
+            await DbContext.Database.ExecuteSqlRawAsync("DELETE FROM Blogs");
+            await DbContext.Database.ExecuteSqlRawAsync("DELETE FROM ConcurrentEntities");
+
+            // 启用外键约束
+            await DbContext.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys = ON;");
+
+            // 提交事务
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            // 回滚事务
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 }
