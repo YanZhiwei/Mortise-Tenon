@@ -24,16 +24,49 @@ public abstract class EfEntityConfigurationBase<TEntity> : EfEntityConfiguration
     IEntityTypeConfiguration<TEntity>
     where TEntity : EfEntity
 {
+    #region 常量定义
+
+    /// <summary>
+    /// 行版本属性名
+    /// </summary>
     private const string RowVersionPropertyName = "RowVersion";
+
+    /// <summary>
+    /// 审计相关属性名
+    /// </summary>
+    private const string CreatedAtPropertyName = "CreatedAt";
+    private const string CreatedByPropertyName = "CreatedBy";
+    private const string UpdatedAtPropertyName = "UpdatedAt";
+    private const string UpdatedByPropertyName = "UpdatedBy";
+    private const string DeletedAtPropertyName = "DeletedAt";
+    private const string DeletedByPropertyName = "DeletedBy";
+    private const string IsDeletedPropertyName = "IsDeleted";
+
+    #endregion
+
+    #region 私有字段
+
     private readonly bool _isSoftDeleteEntity;
     private readonly bool _isConcurrencyEntity;
+    private readonly bool _isAuditableEntity;
+    private readonly bool _isFullAuditableEntity;
+
+    #endregion
+
+    #region 构造函数
 
     protected EfEntityConfigurationBase()
     {
         var entityType = typeof(TEntity);
         _isSoftDeleteEntity = typeof(ISoftDelete).IsAssignableFrom(entityType);
         _isConcurrencyEntity = typeof(IConcurrency).IsAssignableFrom(entityType);
+        _isAuditableEntity = typeof(IAuditable<long>).IsAssignableFrom(entityType);
+        _isFullAuditableEntity = typeof(IFullAuditable<long>).IsAssignableFrom(entityType);
     }
+
+    #endregion
+
+    #region 公共方法
 
     /// <summary>
     /// 配置实体类型
@@ -42,21 +75,36 @@ public abstract class EfEntityConfigurationBase<TEntity> : EfEntityConfiguration
     public virtual void Configure(EntityTypeBuilder<TEntity> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
-        
+
         // 配置基础属性
         ConfigureKey(builder);
-        
+        ConfigureBaseProperties(builder);
+
+        // 配置审计属性
+        if (_isAuditableEntity)
+        {
+            ConfigureAuditableProperties(builder);
+        }
+
+        if (_isFullAuditableEntity)
+        {
+            ConfigureFullAuditableProperties(builder);
+        }
+
         // 配置软删除
         if (_isSoftDeleteEntity)
         {
-            ConfigureQueryFilter(builder);
+            ConfigureSoftDelete(builder);
         }
-        
+
         // 配置并发控制
         if (_isConcurrencyEntity)
         {
             ConfigureConcurrency(builder);
         }
+
+        // 配置索引
+        ConfigureIndexes(builder);
 
         // 允许子类进行额外配置
         ConfigureExtra(builder);
@@ -72,16 +120,77 @@ public abstract class EfEntityConfigurationBase<TEntity> : EfEntityConfiguration
         Configure(modelBuilder.Entity<TEntity>());
     }
 
+    #endregion
+
+    #region 受保护的配置方法
+
     /// <summary>
-    /// 配置软删除查询过滤器
+    /// 配置基础属性
     /// </summary>
     /// <param name="builder">实体类型构建器</param>
-    protected virtual void ConfigureQueryFilter(EntityTypeBuilder<TEntity> builder)
+    protected virtual void ConfigureBaseProperties(EntityTypeBuilder<TEntity> builder)
     {
-        builder.Property(nameof(ISoftDelete.IsDeleted))
+        // 配置实体的基础属性
+        var entityType = typeof(TEntity);
+        builder.ToTable(t => 
+        {
+            t.HasComment($"{entityType.Name}表");
+        });
+    }
+
+    /// <summary>
+    /// 配置审计属性
+    /// </summary>
+    /// <param name="builder">实体类型构建器</param>
+    protected virtual void ConfigureAuditableProperties(EntityTypeBuilder<TEntity> builder)
+    {
+        builder.Property(CreatedAtPropertyName)
+            .IsRequired()
+            .HasColumnOrder(90)
+            .HasComment("创建时间");
+
+        builder.Property(CreatedByPropertyName)
+            .IsRequired()
+            .HasColumnOrder(91)
+            .HasComment("创建人ID");
+
+        builder.Property(UpdatedAtPropertyName)
+            .HasColumnOrder(92)
+            .HasComment("更新时间");
+
+        builder.Property(UpdatedByPropertyName)
+            .HasColumnOrder(93)
+            .HasComment("更新人ID");
+    }
+
+    /// <summary>
+    /// 配置完整审计属性
+    /// </summary>
+    /// <param name="builder">实体类型构建器</param>
+    protected virtual void ConfigureFullAuditableProperties(EntityTypeBuilder<TEntity> builder)
+    {
+        builder.Property(DeletedAtPropertyName)
+            .HasColumnOrder(94)
+            .HasComment("删除时间");
+
+        builder.Property(DeletedByPropertyName)
+            .HasColumnOrder(95)
+            .HasComment("删除人ID");
+    }
+
+    /// <summary>
+    /// 配置软删除
+    /// </summary>
+    /// <param name="builder">实体类型构建器</param>
+    protected virtual void ConfigureSoftDelete(EntityTypeBuilder<TEntity> builder)
+    {
+        builder.Property(IsDeletedPropertyName)
+            .IsRequired()
             .HasDefaultValue(false)
-            .HasColumnOrder(2);
-        builder.HasQueryFilter(d => !EF.Property<bool>(d, nameof(ISoftDelete.IsDeleted)));
+            .HasColumnOrder(2)
+            .HasComment("是否已删除");
+
+        builder.HasQueryFilter(d => !EF.Property<bool>(d, IsDeletedPropertyName));
     }
 
     /// <summary>
@@ -92,8 +201,10 @@ public abstract class EfEntityConfigurationBase<TEntity> : EfEntityConfiguration
     {
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id)
+            .IsRequired()
             .HasColumnOrder(1)
-            .ValueGeneratedOnAdd();
+            .ValueGeneratedOnAdd()
+            .HasComment("主键ID");
     }
 
     /// <summary>
@@ -105,7 +216,33 @@ public abstract class EfEntityConfigurationBase<TEntity> : EfEntityConfiguration
         builder.Property(RowVersionPropertyName)
             .IsRequired()
             .IsRowVersion()
-            .ValueGeneratedOnAddOrUpdate();
+            .IsConcurrencyToken()
+            .ValueGeneratedOnAddOrUpdate()
+            .HasComment("行版本号，用于并发控制");
+    }
+
+    /// <summary>
+    /// 配置索引
+    /// </summary>
+    /// <param name="builder">实体类型构建器</param>
+    protected virtual void ConfigureIndexes(EntityTypeBuilder<TEntity> builder)
+    {
+        // 配置常用字段的索引
+        if (_isSoftDeleteEntity)
+        {
+            builder.HasIndex(IsDeletedPropertyName)
+                .HasFilter($"[{IsDeletedPropertyName}] = 0")
+                .HasDatabaseName($"IX_{typeof(TEntity).Name}_{IsDeletedPropertyName}");
+        }
+
+        if (_isAuditableEntity)
+        {
+            builder.HasIndex(CreatedAtPropertyName)
+                .HasDatabaseName($"IX_{typeof(TEntity).Name}_{CreatedAtPropertyName}");
+            
+            builder.HasIndex(CreatedByPropertyName)
+                .HasDatabaseName($"IX_{typeof(TEntity).Name}_{CreatedByPropertyName}");
+        }
     }
 
     /// <summary>
@@ -116,4 +253,6 @@ public abstract class EfEntityConfigurationBase<TEntity> : EfEntityConfiguration
     {
         // 子类可以通过重写此方法添加额外的配置
     }
+
+    #endregion
 }

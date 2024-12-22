@@ -1,5 +1,7 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 using Tenon.Repository.EfCore.Tests.Entities;
 using Tenon.Repository.EfCore.Tests.Interceptors;
 
@@ -41,9 +43,37 @@ public class BlogDbContext : TenonDbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
+        if (!optionsBuilder.IsConfigured)
+        {
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", false, true)
+                .Build();
+
+            optionsBuilder.UseSqlite(configuration.GetSection("Database:ConnectionString").Value);
+        }
+
         base.OnConfiguring(optionsBuilder);
         optionsBuilder.EnableSensitiveDataLogging();
         optionsBuilder.AddInterceptors(new BlogSoftDeleteInterceptor());
+    }
+}
 
+/// <summary>
+///     BlogDbContext 的设计时工厂
+/// </summary>
+public class BlogDbContextFactory : IDesignTimeDbContextFactory<BlogDbContext>
+{
+    public BlogDbContext CreateDbContext(string[] args)
+    {
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", false, true)
+            .Build();
+
+        var optionsBuilder = new DbContextOptionsBuilder<BlogDbContext>();
+        optionsBuilder.UseSqlite(configuration.GetSection("Database:ConnectionString").Value);
+
+        return new BlogDbContext(optionsBuilder.Options);
     }
 }

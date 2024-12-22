@@ -128,7 +128,7 @@ public static class ServiceCollectionExtensions
     /// <param name="options">数据库上下文配置构建器</param>
     private static void ConfigureInterceptors(IServiceProvider serviceProvider, DbContextOptionsBuilder options)
     {
-        var auditableUser = serviceProvider.GetService<EfUserAuditInfo>();
+        var auditableUser = serviceProvider.GetService<IAuditable<long>>();
         if (auditableUser != null)
         {
             var fullAuditableFieldsInterceptor = new FullAuditableFieldsInterceptor(auditableUser);

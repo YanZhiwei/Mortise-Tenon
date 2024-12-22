@@ -1,6 +1,6 @@
 ﻿namespace Tenon.Repository.EfCore;
 
-public class EfUserAuditInfo : IUserAuditInfo<long>
+public class EfAuditable : IAuditable<long>
 {
     public long UserId { get; set; }
 }

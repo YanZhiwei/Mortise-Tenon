@@ -14,10 +14,10 @@ namespace Tenon.Repository.EfCore.Tests;
 public abstract class TestBase
 {
     private const string DbFileName = "test.db";
-    
-    protected required ILogger<EfRepository<BlogComment>> BlogCommentLogger { get; set; }
-    protected required ILogger<EfRepository<Blog>> BlogLogger { get; set; }
-    protected required ILogger<EfRepository<BlogTag>> BlogTagLogger { get; set; }
+
+    public required ILogger<EfRepository<BlogComment>> BlogCommentLogger { get; set; }
+    public required ILogger<EfRepository<Blog>> BlogLogger { get; set; }
+    public required ILogger<EfRepository<BlogTag>> BlogTagLogger { get; set; }
     protected BlogDbContext DbContext { get; private set; } = null!;
     protected EfRepository<Blog> BlogEfRepo { get; private set; } = null!;
     protected EfRepository<BlogTag> BlogTagEfRepo { get; private set; } = null!;
@@ -28,10 +28,7 @@ public abstract class TestBase
     public virtual async Task Setup()
     {
         // 删除可能存在的旧数据库文件
-        if (File.Exists(DbFileName))
-        {
-            File.Delete(DbFileName);
-        }
+        if (File.Exists(DbFileName)) File.Delete(DbFileName);
 
         var services = new ServiceCollection();
 
@@ -42,12 +39,12 @@ public abstract class TestBase
             .Build();
 
         // 配置日志
-        services.AddLogging(builder => 
+        services.AddLogging(builder =>
             builder.AddConsole()
-                  .SetMinimumLevel(LogLevel.Information));
+                .SetMinimumLevel(LogLevel.Information));
 
-        // 注册 EfAuditableUser
-        services.AddScoped<EfUserAuditInfo>(_ => new EfUserAuditInfo { UserId = 1 });
+        // 注册审计用户
+        services.AddScoped<IAuditable<long>>(_ => new EfAuditable {UserId = 1});
 
         // 使用 AddEfCore 扩展方法注册仓储和 DbContext
         services.AddEfCore<BlogDbContext, TestUnitOfWork>(
@@ -63,12 +60,9 @@ public abstract class TestBase
     public virtual void Cleanup()
     {
         DbContext.Dispose();
-        
+
         // 清理数据库文件
-        if (File.Exists(DbFileName))
-        {
-            File.Delete(DbFileName);
-        }
+        if (File.Exists(DbFileName)) File.Delete(DbFileName);
     }
 
     /// <summary>
