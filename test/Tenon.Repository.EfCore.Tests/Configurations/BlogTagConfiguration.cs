@@ -1,20 +1,17 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Tenon.Repository;
 using Tenon.Repository.EfCore.Tests.Entities;
 
 namespace Tenon.Repository.EfCore.Tests.Configurations;
 
 /// <summary>
-/// BlogTag实体配置
+/// Blog标签实体配置
 /// </summary>
-public class BlogTagConfiguration : AbstractEntityTypeConfiguration<BlogTag>
+public class BlogTagConfiguration : EfEntityConfigurationBase<BlogTag>
 {
     public override void Configure(EntityTypeBuilder<BlogTag> builder)
     {
         base.Configure(builder);
-        builder.Property(x => x.Name).IsRequired().HasMaxLength(50);
-        builder.HasMany(x => x.Blogs)
-            .WithMany(x => x.Tags)
-            .UsingEntity(j => j.ToTable("BlogTagRelation"));
+        builder.Property(x => x.Name).IsRequired().HasMaxLength(DatabaseColumnLength.ShortText);
     }
 } 
