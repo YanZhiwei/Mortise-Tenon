@@ -1,10 +1,15 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
+using Tenon.AspNetCore.Localization;
+using Tenon.AspNetCore.Resources;
 
 namespace Tenon.AspNetCore.Filters;
 
 public class FileValidationResult
 {
+    private static FileValidationLocalizer? _localizer;
+
     private FileValidationResult(bool hasError = false, int? statusCode = null, string? title = null,
         string? detail = null)
     {
@@ -19,6 +24,11 @@ public class FileValidationResult
     public string? Title { get; }
     public string? Detail { get; }
 
+    internal static void Configure(FileValidationLocalizer localizer)
+    {
+        _localizer = localizer;
+    }
+
     public static FileValidationResult Success()
     {
         return new FileValidationResult();
@@ -29,8 +39,9 @@ public class FileValidationResult
         return new FileValidationResult(
             true,
             StatusCodes.Status413PayloadTooLarge,
-            "File Too Large",
-            $"The file size cannot exceed {maxFileSize / 1024 / 1024}MB");
+            _localizer?.GetLocalizedString(FileValidationResource.FileTooLarge) ?? FileValidationResource.FileTooLarge,
+            _localizer?.GetLocalizedString(FileValidationResource.FileSizeExceedsLimit, maxFileSize / 1024 / 1024) ?? 
+            string.Format(FileValidationResource.FileSizeExceedsLimit, maxFileSize / 1024 / 1024));
     }
 
     public static FileValidationResult UnsupportedExtension(string extension)
@@ -38,8 +49,9 @@ public class FileValidationResult
         return new FileValidationResult(
             true,
             StatusCodes.Status415UnsupportedMediaType,
-            "Unsupported File Type",
-            $"The file extension '{extension}' is not supported");
+            _localizer?.GetLocalizedString(FileValidationResource.UnsupportedFileType) ?? FileValidationResource.UnsupportedFileType,
+            _localizer?.GetLocalizedString(FileValidationResource.UnsupportedFileExtension, extension) ?? 
+            string.Format(FileValidationResource.UnsupportedFileExtension, extension));
     }
 
     public static FileValidationResult InvalidFileName(string message)
@@ -47,8 +59,8 @@ public class FileValidationResult
         return new FileValidationResult(
             true,
             StatusCodes.Status400BadRequest,
-            "Invalid File Name",
-            message);
+            _localizer?.GetLocalizedString(FileValidationResource.InvalidFileName) ?? FileValidationResource.InvalidFileName,
+            _localizer?.GetLocalizedString(message) ?? message);
     }
 
     public IActionResult ToProblemDetails()
