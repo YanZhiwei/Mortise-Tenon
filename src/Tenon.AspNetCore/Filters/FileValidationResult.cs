@@ -51,15 +51,6 @@ public class FileValidationResult
             message);
     }
 
-    public static FileValidationResult UnsupportedContentType(string contentType)
-    {
-        return new FileValidationResult(
-            true,
-            StatusCodes.Status415UnsupportedMediaType,
-            "不支持的内容类型",
-            $"不支持的内容类型：{contentType}");
-    }
-
     public IActionResult ToProblemDetails()
     {
         if (!HasError) throw new InvalidOperationException("Cannot create ProblemDetails for successful validation");

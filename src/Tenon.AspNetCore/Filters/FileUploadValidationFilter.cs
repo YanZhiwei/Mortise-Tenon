@@ -46,9 +46,6 @@ public class FileUploadValidationFilter : IAsyncActionFilter
         if (_options.ValidateFileName)
             validators.Add(new FileNameValidator());
 
-        if (_options.AllowedContentTypes?.Count > 0)
-            validators.Add(new ContentTypeValidator(_options.AllowedContentTypes));
-
         return validators;
     }
 
