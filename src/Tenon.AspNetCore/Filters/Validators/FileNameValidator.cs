@@ -8,10 +8,10 @@ public class FileNameValidator : IFileValidator
     {
         var fileName = Path.GetFileName(file.FileName);
         if (string.IsNullOrWhiteSpace(fileName))
-            return FileValidationResult.InvalidFileName("文件名不能为空");
+            return FileValidationResult.InvalidFileName("File name cannot be empty");
 
         if (fileName.Any(c => Path.GetInvalidFileNameChars().Contains(c)))
-            return FileValidationResult.InvalidFileName("文件名包含非法字符");
+            return FileValidationResult.InvalidFileName("File name contains invalid characters");
 
         return FileValidationResult.Success();
     }

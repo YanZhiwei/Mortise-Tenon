@@ -29,8 +29,8 @@ public class FileValidationResult
         return new FileValidationResult(
             true,
             StatusCodes.Status413PayloadTooLarge,
-            "文件太大",
-            $"文件大小不能超过 {maxFileSize / 1024 / 1024}MB");
+            "File Too Large",
+            $"The file size cannot exceed {maxFileSize / 1024 / 1024}MB");
     }
 
     public static FileValidationResult UnsupportedExtension(string extension)
@@ -38,8 +38,8 @@ public class FileValidationResult
         return new FileValidationResult(
             true,
             StatusCodes.Status415UnsupportedMediaType,
-            "不支持的文件类型",
-            $"不支持的文件扩展名：{extension}");
+            "Unsupported File Type",
+            $"The file extension '{extension}' is not supported");
     }
 
     public static FileValidationResult InvalidFileName(string message)
@@ -47,7 +47,7 @@ public class FileValidationResult
         return new FileValidationResult(
             true,
             StatusCodes.Status400BadRequest,
-            "无效的文件名",
+            "Invalid File Name",
             message);
     }
 
