@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Tenon.AspNetCore.Authentication.Bearer;
 using Tenon.AspNetCore.Authorization;
 using Tenon.AspNetCore.Configuration;
+using Tenon.AspNetCore.Filters;
 
 namespace Tenon.AspNetCore.Extensions;
 
@@ -65,5 +67,27 @@ public static class ServiceCollectionExtension
             corsPolicyAction += corsPolicy => corsPolicy.WithOrigins(corsHosts.Split(','));
 
         return services.AddCors(options => options.AddPolicy(policyName, corsPolicyAction));
+    }
+
+    public static IServiceCollection AddFileUpload(this IServiceCollection services, IConfigurationSection fileUploadSection)
+    {
+        if (fileUploadSection == null)
+            throw new ArgumentNullException(nameof(fileUploadSection));
+            
+        var fileUploadOptions = fileUploadSection.Get<FileUploadOptions>();
+        if (fileUploadOptions == null)
+            throw new ArgumentNullException(nameof(fileUploadOptions));
+
+        fileUploadOptions.Validate();
+
+        services.Configure<FileUploadOptions>(fileUploadSection);
+        services.Configure<FormOptions>(formOptions =>
+        {
+            formOptions.MultipartBodyLengthLimit = fileUploadOptions.MaxFileSize;
+        });
+
+        services.AddScoped<FileUploadValidationFilter>();
+
+        return services;
     }
 }
