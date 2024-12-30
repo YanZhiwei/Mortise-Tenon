@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <data name="FileTooLarge" xml:space="preserve">
+    <value>文件太大</value>
+  </data>
+  <data name="FileSizeExceedsLimit" xml:space="preserve">
+    <value>文件大小不能超过 {0}MB</value>
+  </data>
+  <data name="UnsupportedFileType" xml:space="preserve">
+    <value>不支持的文件类型</value>
+  </data>
+  <data name="UnsupportedFileExtension" xml:space="preserve">
+    <value>不支持的文件扩展名：{0}</value>
+  </data>
+  <data name="InvalidFileName" xml:space="preserve">
+    <value>无效的文件名</value>
+  </data>
+  <data name="FileNameEmpty" xml:space="preserve">
+    <value>文件名不能为空</value>
+  </data>
+  <data name="FileNameInvalidChars" xml:space="preserve">
+    <value>文件名包含非法字符</value>
+  </data>
+</root> 

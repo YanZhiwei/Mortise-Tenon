@@ -173,6 +173,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tenon.Caching.InMemoryTests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tenon.Caching.RedisStackExchangeTests", "..\test\Tenon.Caching.RedisStackExchangeTests\Tenon.Caching.RedisStackExchangeTests.csproj", "{2A451990-60A4-438C-A317-DA3BD0D2A2F8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileUploadSample", "..\samples\FileUploadSample\FileUploadSample.csproj", "{A6C4DD93-A05C-41DC-A11B-1B93F4C9E5CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -463,6 +465,10 @@ Global
 		{2A451990-60A4-438C-A317-DA3BD0D2A2F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A451990-60A4-438C-A317-DA3BD0D2A2F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2A451990-60A4-438C-A317-DA3BD0D2A2F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6C4DD93-A05C-41DC-A11B-1B93F4C9E5CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6C4DD93-A05C-41DC-A11B-1B93F4C9E5CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6C4DD93-A05C-41DC-A11B-1B93F4C9E5CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6C4DD93-A05C-41DC-A11B-1B93F4C9E5CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -523,6 +529,7 @@ Global
 		{2707E3D3-BA86-41CB-B654-043A10AD33E5} = {E105A163-9660-4A89-8CA9-C242762B8613}
 		{F67BAD59-C16F-488C-8CFE-1F31C15312E3} = {E105A163-9660-4A89-8CA9-C242762B8613}
 		{2A451990-60A4-438C-A317-DA3BD0D2A2F8} = {E105A163-9660-4A89-8CA9-C242762B8613}
+		{A6C4DD93-A05C-41DC-A11B-1B93F4C9E5CF} = {76FD4AE7-DA80-4244-8A1A-784DD49F9894}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BD20DE54-1131-41A3-9F1B-37B742A8FA09}

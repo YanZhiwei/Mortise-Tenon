@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <data name="EmptyFileName" xml:space="preserve">
+    <value>文件名不能为空</value>
+  </data>
+  <data name="FileTooLarge" xml:space="preserve">
+    <value>文件大小超过限制：{0}MB</value>
+  </data>
+  <data name="InvalidExtension" xml:space="preserve">
+    <value>不支持的文件类型：{0}，允许的类型：{1}</value>
+  </data>
+  <data name="InvalidFileName" xml:space="preserve">
+    <value>文件名包含非法字符</value>
+  </data>
+  <data name="UnsupportedExternalDomain" xml:space="preserve">
+    <value>不支持的外部域名：{0}</value>
+  </data>
+  <data name="InvalidExternalResource" xml:space="preserve">
+    <value>无效的外部资源地址：{0}</value>
+  </data>
+</root> 
