@@ -1,6 +1,0 @@
-@WebApiJwtBearerSample_HostAddress = http://localhost:5139
-
-GET {{WebApiJwtBearerSample_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
