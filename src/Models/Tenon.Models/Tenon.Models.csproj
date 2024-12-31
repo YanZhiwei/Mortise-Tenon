@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Abstractions\Tenon.Abstractions\Tenon.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Tenon.AspNetCore\Tenon.AspNetCore.csproj" />
   </ItemGroup>
 
 </Project>
