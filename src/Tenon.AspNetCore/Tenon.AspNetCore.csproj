@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="DTOs\Inputs\" />
+    <Folder Include="DTOs\Request\" />
   </ItemGroup>
 
 </Project>

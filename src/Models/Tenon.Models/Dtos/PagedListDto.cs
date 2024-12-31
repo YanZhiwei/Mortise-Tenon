@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Tenon.Abstractions;
+using Tenon.AspNetCore.DTOs.Request;
 
 namespace Tenon.Models.Dtos;
 

@@ -22,7 +22,7 @@ namespace ConsulSample
             var startAssembly = System.Reflection.Assembly.GetExecutingAssembly();
             var serviceInfo = WebServiceDescriptor.CreateInstance(startAssembly);
             builder.Services.AddConsul(builder.Configuration.GetSection("Consul"));
-            builder.Services.AddSingleton<IWebServiceDescriptor>(serviceInfo);
+            builder.Services.AddSingleton<IWebApiServiceDescriptor>(serviceInfo);
             builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             var app = builder.Build();
            

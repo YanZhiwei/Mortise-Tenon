@@ -12,7 +12,7 @@ public static class HostExtension
             throw new ArgumentNullException(nameof(host));
         if (getServiceAddressHandle == null)
             throw new ArgumentNullException(nameof(getServiceAddressHandle));
-        var serviceInfo = host.Services.GetRequiredService<IWebServiceDescriptor>();
+        var serviceInfo = host.Services.GetRequiredService<IWebApiServiceDescriptor>();
         var registration = ActivatorUtilities.CreateInstance<RegistrationProvider>(host.Services);
         registration.Register(getServiceAddressHandle, serviceInfo.Id);
         return host;
