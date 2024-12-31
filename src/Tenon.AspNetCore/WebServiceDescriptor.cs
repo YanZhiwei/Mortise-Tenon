@@ -4,7 +4,7 @@ using Tenon.Abstractions;
 namespace Tenon.AspNetCore;
 
 public class WebServiceDescriptor
-    : IWebServiceDescriptor
+    : IWebApiServiceDescriptor
 {
     public string Id { get; private init; }
     public string ServiceName { get; private init; }
@@ -12,7 +12,7 @@ public class WebServiceDescriptor
     public string Description { get; private init; }
     public string CorsPolicy { get; private init; }
 
-    public static IWebServiceDescriptor CreateInstance(Assembly startAssembly, string? serviceName = null,
+    public static IWebApiServiceDescriptor CreateInstance(Assembly startAssembly, string? serviceName = null,
         string? serviceInternalId = null,
         string corsPolicy = "default")
     {
