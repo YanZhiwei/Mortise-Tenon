@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Abstractions\Tenon.Caching.Abstractions\Tenon.Caching.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Tenon.Caching.InMemory\Tenon.Caching.InMemory.csproj" />
   </ItemGroup>
 
 </Project>
