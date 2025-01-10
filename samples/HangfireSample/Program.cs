@@ -32,7 +32,20 @@ builder.Services.AddHangfireServices(builder.Configuration);
 // 配置 SQLite 存储选项
 var storageOptions = new SQLiteStorageOptions
 {
-    QueuePollInterval = TimeSpan.FromSeconds(15) // 轮询间隔
+    // 基础配置
+    Prefix = "hangfire",                            // 表前缀
+    QueuePollInterval = TimeSpan.FromSeconds(15),   // 队列轮询间隔
+    InvisibilityTimeout = TimeSpan.FromMinutes(30), // 任务隐藏超时
+    DistributedLockLifetime = TimeSpan.FromSeconds(30), // 分布式锁超时
+    
+    // 维护配置
+    JobExpirationCheckInterval = TimeSpan.FromHours(1),   // 过期任务检查间隔
+    CountersAggregateInterval = TimeSpan.FromMinutes(5),  // 计数器聚合间隔
+    
+    // 性能配置
+    PoolSize = 50,                                  // 连接池大小，默认20
+    JournalMode = SQLiteStorageOptions.JournalModes.WAL,  // WAL模式提高并发性能
+    AutoVacuumSelected = SQLiteStorageOptions.AutoVacuum.INCREMENTAL // 增量式自动清理
 };
 
 // 添加 Hangfire 服务
