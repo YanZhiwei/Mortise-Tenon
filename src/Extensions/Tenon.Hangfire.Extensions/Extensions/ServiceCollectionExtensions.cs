@@ -53,12 +53,12 @@ public static class ServiceCollectionExtensions
             Authorization =
             [
                 new HangfireBasicAuthenticationFilter(
-                    hangfireOptions,
-                    passwordValidator,
                     loginAttemptTracker,
+                    passwordValidator,
+                    hangfireOptions.Authentication,
                     app.Services.GetRequiredService<ILogger<HangfireBasicAuthenticationFilter>>()),
                 new HangfireIpAuthorizationFilter(
-                    hangfireOptions,
+                    hangfireOptions.IpAuthorization,
                     app.Services.GetRequiredService<ILogger<HangfireIpAuthorizationFilter>>())
             ],
             DashboardTitle = hangfireOptions.DashboardTitle,

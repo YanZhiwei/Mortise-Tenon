@@ -24,4 +24,8 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Abstractions\Tenon.Caching.Abstractions\Tenon.Caching.Abstractions.csproj" />
+  </ItemGroup>
+
 </Project>
