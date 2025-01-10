@@ -65,7 +65,7 @@ public class HangfireBasicAuthenticationFilter : IDashboardAuthorizationFilter
         var password = authValues[1];
 
         // 检查用户名
-        if (username != _options.Username)
+        if (username != _options.Authentication.Username)
         {
             _logger.LogWarning("用户名错误: {Username}", username);
             return Challenge(httpContext, "用户名或密码错误");
@@ -90,7 +90,7 @@ public class HangfireBasicAuthenticationFilter : IDashboardAuthorizationFilter
         }
 
         // 验证密码是否正确
-        if (password != _options.Password)
+        if (password != _options.Authentication.Password)
         {
             _loginAttemptTracker.RecordFailedAttempt(username);
             var remainingAttempts = _loginAttemptTracker.GetRemainingAttempts(username);

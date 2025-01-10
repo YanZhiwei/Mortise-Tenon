@@ -6,6 +6,16 @@ namespace Tenon.Hangfire.Extensions.Configuration;
 public class AuthenticationOptions
 {
     /// <summary>
+    ///     用户名
+    /// </summary>
+    public string Username { get; set; } = string.Empty;
+
+    /// <summary>
+    ///     密码
+    /// </summary>
+    public string Password { get; set; } = string.Empty;
+
+    /// <summary>
     ///     认证类型
     /// </summary>
     public AuthenticationType AuthType { get; set; } = AuthenticationType.Basic;
