@@ -1,8 +1,6 @@
 using Hangfire;
 using Hangfire.Storage.SQLite;
 using HangfireSample.Services;
-using Microsoft.Extensions.Options;
-using System.Data.SQLite;
 using Tenon.Hangfire.Extensions.Configuration;
 using Tenon.Hangfire.Extensions.Extensions;
 
@@ -15,46 +13,6 @@ builder.Services.AddSwaggerGen();
 
 // 添加示例任务服务
 builder.Services.AddScoped<SampleJobService>();
-
-//// 获取 SQLite 配置
-//var sqliteConfig = builder.Configuration.GetSection("SQLite").Get<Dictionary<string, string>>() ?? new Dictionary<string, string>();
-//var dbPath = Path.Combine(builder.Environment.ContentRootPath, sqliteConfig.GetValueOrDefault("DatabasePath", "hangfire.db"));
-
-//// 确保可以创建和访问数据库文件
-//try
-//{
-//    var directory = Path.GetDirectoryName(dbPath);
-//    if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-//    {
-//        Directory.CreateDirectory(directory);
-//    }
-
-//    // 设置文件权限（如果文件存在）
-//    if (File.Exists(dbPath))
-//    {
-//        var fileInfo = new FileInfo(dbPath);
-//        fileInfo.Attributes &= ~FileAttributes.ReadOnly;
-//    }
-//    else 
-//    {
-//        // 创建数据库文件
-//        SQLiteConnection.CreateFile(dbPath);
-//        Console.WriteLine($"已创建数据库文件: {dbPath}");
-//    }
-
-//    // 测试数据库连接
-//    var connectionString = builder.Configuration.GetConnectionString("HangfireConnection");
-//    using var connection = new SQLiteConnection(connectionString);
-//    connection.Open();
-//    connection.Close();
-
-//    Console.WriteLine("数据库连接测试成功");
-//}
-//catch (Exception ex)
-//{
-//    Console.WriteLine($"数据库初始化错误: {ex.Message}");
-//    throw new InvalidOperationException($"无法创建或访问 SQLite 数据库文件: {ex.Message}", ex);
-//}
 
 // 配置 Hangfire 选项
 var hangfireSection = builder.Configuration.GetSection("Hangfire");
@@ -110,4 +68,4 @@ app.MapControllers();
 // 使用 Hangfire 仪表板
 app.UseHangfire(app.Configuration.GetSection("Hangfire"));
 
-app.Run(); 
+app.Run();
