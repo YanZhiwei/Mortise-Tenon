@@ -16,54 +16,45 @@ builder.Services.AddSwaggerGen();
 // 添加示例任务服务
 builder.Services.AddScoped<SampleJobService>();
 
-// 获取 SQLite 配置
-var sqliteConfig = builder.Configuration.GetSection("SQLite").Get<Dictionary<string, string>>() ?? new Dictionary<string, string>();
-var dbPath = Path.Combine(builder.Environment.ContentRootPath, sqliteConfig.GetValueOrDefault("DatabasePath", "hangfire.db"));
+//// 获取 SQLite 配置
+//var sqliteConfig = builder.Configuration.GetSection("SQLite").Get<Dictionary<string, string>>() ?? new Dictionary<string, string>();
+//var dbPath = Path.Combine(builder.Environment.ContentRootPath, sqliteConfig.GetValueOrDefault("DatabasePath", "hangfire.db"));
 
-// 确保可以创建和访问数据库文件
-try
-{
-    var directory = Path.GetDirectoryName(dbPath);
-    if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-    {
-        Directory.CreateDirectory(directory);
-    }
+//// 确保可以创建和访问数据库文件
+//try
+//{
+//    var directory = Path.GetDirectoryName(dbPath);
+//    if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+//    {
+//        Directory.CreateDirectory(directory);
+//    }
 
-    if (File.Exists(dbPath))
-    {
-        // 如果文件存在但可能被锁定，尝试删除它
-        try
-        {
-            File.Delete(dbPath);
-            Console.WriteLine("已删除现有数据库文件");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"无法删除现有数据库文件: {ex.Message}");
-        }
-    }
+//    // 设置文件权限（如果文件存在）
+//    if (File.Exists(dbPath))
+//    {
+//        var fileInfo = new FileInfo(dbPath);
+//        fileInfo.Attributes &= ~FileAttributes.ReadOnly;
+//    }
+//    else 
+//    {
+//        // 创建数据库文件
+//        SQLiteConnection.CreateFile(dbPath);
+//        Console.WriteLine($"已创建数据库文件: {dbPath}");
+//    }
 
-    // 创建数据库文件
-    SQLiteConnection.CreateFile(dbPath);
-    Console.WriteLine($"已创建数据库文件: {dbPath}");
+//    // 测试数据库连接
+//    var connectionString = builder.Configuration.GetConnectionString("HangfireConnection");
+//    using var connection = new SQLiteConnection(connectionString);
+//    connection.Open();
+//    connection.Close();
 
-    // 设置文件权限
-    var fileInfo = new FileInfo(dbPath);
-    fileInfo.Attributes &= ~FileAttributes.ReadOnly;
-
-    // 测试数据库连接
-    var connectionString = builder.Configuration.GetConnectionString("HangfireConnection");
-    using var connection = new SQLiteConnection(connectionString);
-    connection.Open();
-    connection.Close();
-
-    Console.WriteLine("数据库连接测试成功");
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"数据库初始化错误: {ex.Message}");
-    throw new InvalidOperationException($"无法创建或访问 SQLite 数据库文件: {ex.Message}", ex);
-}
+//    Console.WriteLine("数据库连接测试成功");
+//}
+//catch (Exception ex)
+//{
+//    Console.WriteLine($"数据库初始化错误: {ex.Message}");
+//    throw new InvalidOperationException($"无法创建或访问 SQLite 数据库文件: {ex.Message}", ex);
+//}
 
 // 配置 Hangfire 选项
 var hangfireSection = builder.Configuration.GetSection("Hangfire");
