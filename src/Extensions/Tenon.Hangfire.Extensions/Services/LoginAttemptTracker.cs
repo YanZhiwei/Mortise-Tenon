@@ -1,83 +1,120 @@
-using Microsoft.Extensions.Caching.Memory;
-using Tenon.Hangfire.Extensions.Configuration;
+using System;
+using System.Threading.Tasks;
+using Tenon.Caching.Abstractions;
 
 namespace Tenon.Hangfire.Extensions.Services;
 
 /// <summary>
-///     登录尝试跟踪器实现
+/// 登录尝试跟踪器
 /// </summary>
 public class LoginAttemptTracker : ILoginAttemptTracker
 {
-    private readonly IMemoryCache _cache;
-    private readonly AuthenticationOptions _options;
-    private const string AttemptPrefix = "LoginAttempt_";
-    private const string LockoutPrefix = "Lockout_";
+    private readonly ICacheProvider _cache;
+    private const string KeyPrefix = "LoginAttempts_";
+    private const string LockoutPrefix = "LoginLockout_";
 
-    /// <summary>
-    ///     构造函数
-    /// </summary>
-    /// <param name="cache">内存缓存</param>
-    /// <param name="options">认证配置选项</param>
-    public LoginAttemptTracker(IMemoryCache cache, AuthenticationOptions options)
+    public LoginAttemptTracker(ICacheProvider cache)
     {
-        _cache = cache;
-        _options = options;
+        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }
 
-    /// <summary>
-    ///     记录失败的登录尝试
-    /// </summary>
-    /// <param name="username">用户名</param>
-    public void RecordFailedAttempt(string username)
-    {
-        var attempts = GetCurrentAttempts(username);
-        attempts++;
-
-        if (attempts >= _options.MaxLoginAttempts)
-        {
-            // 设置账户锁定
-            _cache.Set($"{LockoutPrefix}{username}", true,
-                TimeSpan.FromMinutes(_options.LockoutDuration));
-        }
-
-        // 更新失败次数
-        _cache.Set($"{AttemptPrefix}{username}", attempts,
-            TimeSpan.FromMinutes(_options.LockoutDuration));
-    }
-
-    /// <summary>
-    ///     重置失败的登录尝试
-    /// </summary>
-    /// <param name="username">用户名</param>
-    public void ResetFailedAttempts(string username)
-    {
-        _cache.Remove($"{AttemptPrefix}{username}");
-        _cache.Remove($"{LockoutPrefix}{username}");
-    }
-
-    /// <summary>
-    ///     检查账户是否被锁定
-    /// </summary>
-    /// <param name="username">用户名</param>
-    /// <returns>是否被锁定</returns>
     public bool IsAccountLocked(string username)
     {
-        return _cache.TryGetValue($"{LockoutPrefix}{username}", out bool _);
+        if (string.IsNullOrEmpty(username))
+            throw new ArgumentNullException(nameof(username));
+
+        var lockoutKey = $"{LockoutPrefix}{username}";
+        return _cache.Exists(lockoutKey);
     }
 
-    /// <summary>
-    ///     获取剩余的登录尝试次数
-    /// </summary>
-    /// <param name="username">用户名</param>
-    /// <returns>剩余尝试次数</returns>
-    public int GetRemainingAttempts(string username)
+    public async Task<bool> IsAccountLockedAsync(string username)
     {
-        var attempts = GetCurrentAttempts(username);
-        return Math.Max(0, _options.MaxLoginAttempts - attempts);
+        if (string.IsNullOrEmpty(username))
+            throw new ArgumentNullException(nameof(username));
+
+        var lockoutKey = $"{LockoutPrefix}{username}";
+        return await _cache.ExistsAsync(lockoutKey);
     }
 
-    private int GetCurrentAttempts(string username)
+    public int GetRemainingAttempts(string username, int maxAttempts)
     {
-        return _cache.TryGetValue($"{AttemptPrefix}{username}", out int attempts) ? attempts : 0;
+        if (string.IsNullOrEmpty(username))
+            throw new ArgumentNullException(nameof(username));
+
+        var key = $"{KeyPrefix}{username}";
+        var result = _cache.Get<int>(key);
+        var attempts = result.HasValue ? result.Value : 0;
+        return Math.Max(0, maxAttempts - attempts);
+    }
+
+    public async Task<int> GetRemainingAttemptsAsync(string username, int maxAttempts)
+    {
+        if (string.IsNullOrEmpty(username))
+            throw new ArgumentNullException(nameof(username));
+
+        var key = $"{KeyPrefix}{username}";
+        var result = await _cache.GetAsync<int>(key);
+        var attempts = result.HasValue ? result.Value : 0;
+        return Math.Max(0, maxAttempts - attempts);
+    }
+
+    public void RecordFailedAttempt(string username, int maxAttempts, TimeSpan lockoutDuration)
+    {
+        if (string.IsNullOrEmpty(username))
+            throw new ArgumentNullException(nameof(username));
+
+        var key = $"{KeyPrefix}{username}";
+        var result = _cache.Get<int>(key);
+        var attempts = result.HasValue ? result.Value + 1 : 1;
+
+        _cache.Set(key, attempts, TimeSpan.FromHours(1));
+
+        if (attempts >= maxAttempts)
+        {
+            var lockoutKey = $"{LockoutPrefix}{username}";
+            _cache.Set(lockoutKey, true, lockoutDuration);
+        }
+    }
+
+    public async Task RecordFailedAttemptAsync(string username, int maxAttempts, TimeSpan lockoutDuration)
+    {
+        if (string.IsNullOrEmpty(username))
+            throw new ArgumentNullException(nameof(username));
+
+        var key = $"{KeyPrefix}{username}";
+        var result = await _cache.GetAsync<int>(key);
+        var attempts = result.HasValue ? result.Value + 1 : 1;
+
+        await _cache.SetAsync(key, attempts, TimeSpan.FromHours(1));
+
+        if (attempts >= maxAttempts)
+        {
+            var lockoutKey = $"{LockoutPrefix}{username}";
+            await _cache.SetAsync(lockoutKey, true, lockoutDuration);
+        }
+    }
+
+    public void ResetFailedAttempts(string username)
+    {
+        if (string.IsNullOrEmpty(username))
+            throw new ArgumentNullException(nameof(username));
+
+        var key = $"{KeyPrefix}{username}";
+        var lockoutKey = $"{LockoutPrefix}{username}";
+
+        _cache.Remove(key);
+        _cache.Remove(lockoutKey);
+    }
+
+    public async Task ResetFailedAttemptsAsync(string username)
+    {
+        if (string.IsNullOrEmpty(username))
+            throw new ArgumentNullException(nameof(username));
+
+        var key = $"{KeyPrefix}{username}";
+        var lockoutKey = $"{LockoutPrefix}{username}";
+
+        await _cache.RemoveAsync(key);
+        await _cache.RemoveAsync(lockoutKey);
     }
 } 

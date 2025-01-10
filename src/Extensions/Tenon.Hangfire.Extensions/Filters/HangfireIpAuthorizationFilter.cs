@@ -10,15 +10,15 @@ namespace Tenon.Hangfire.Extensions.Filters;
 /// </summary>
 public sealed class HangfireIpAuthorizationFilter : IDashboardAuthorizationFilter
 {
-    private readonly HangfireOptions _options;
+    private readonly IpAuthorizationOptions _options;
     private readonly ILogger<HangfireIpAuthorizationFilter> _logger;
 
     /// <summary>
     ///     构造函数
     /// </summary>
-    /// <param name="options">Hangfire 配置选项</param>
+    /// <param name="options">IP 认证配置选项</param>
     /// <param name="logger">日志记录器</param>
-    public HangfireIpAuthorizationFilter(HangfireOptions options, ILogger<HangfireIpAuthorizationFilter> logger)
+    public HangfireIpAuthorizationFilter(IpAuthorizationOptions options, ILogger<HangfireIpAuthorizationFilter> logger)
     {
         _options = options;
         _logger = logger;
@@ -31,7 +31,7 @@ public sealed class HangfireIpAuthorizationFilter : IDashboardAuthorizationFilte
     /// <returns>是否授权通过</returns>
     public bool Authorize(DashboardContext context)
     {
-        if (!_options.IpAuthorization.Enabled)
+        if (!_options.Enabled)
         {
             return true;
         }
@@ -46,13 +46,13 @@ public sealed class HangfireIpAuthorizationFilter : IDashboardAuthorizationFilte
         }
 
         // 检查单个 IP 地址
-        if (_options.IpAuthorization.AllowedIPs.Contains(remoteIp.ToString()))
+        if (_options.AllowedIPs.Contains(remoteIp.ToString()))
         {
             return true;
         }
 
         // 检查 IP 范围
-        foreach (var range in _options.IpAuthorization.AllowedIpRanges)
+        foreach (var range in _options.AllowedIpRanges)
         {
             if (IsIpInRange(remoteIp, range))
             {

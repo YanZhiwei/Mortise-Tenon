@@ -3,6 +3,8 @@ using Hangfire.Storage.SQLite;
 using HangfireSample.Services;
 using Tenon.Hangfire.Extensions.Configuration;
 using Tenon.Hangfire.Extensions.Extensions;
+using Tenon.Caching.Abstractions;
+using Tenon.Caching.InMemory;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +27,15 @@ builder.Services.Configure<AuthenticationOptions>(authSection);
 // 获取认证选项的实例
 var authOptions = authSection.Get<AuthenticationOptions>();
 builder.Services.AddSingleton(authOptions ?? new AuthenticationOptions());
+
+// 注册缓存提供程序
+builder.Services.AddSingleton<ICacheProvider>(provider => 
+    new MemoryCacheProvider(
+        cacheName: "HangfireSample",
+        cacheMemoryLimitMegabytes: 100,
+        physicalMemoryLimitPercentage: 10,
+        pollingInterval: TimeSpan.FromMinutes(5)
+    ));
 
 // 添加 Hangfire 服务
 builder.Services.AddHangfireServices(builder.Configuration);

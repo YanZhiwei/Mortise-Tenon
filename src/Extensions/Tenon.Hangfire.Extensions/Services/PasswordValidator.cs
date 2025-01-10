@@ -1,63 +1,64 @@
-using System.Text.RegularExpressions;
+using System;
+using System.Linq;
 using Tenon.Hangfire.Extensions.Configuration;
 
 namespace Tenon.Hangfire.Extensions.Services;
 
 /// <summary>
-///     密码验证器实现
+/// 密码验证器实现
 /// </summary>
 public class PasswordValidator : IPasswordValidator
 {
-    /// <summary>
-    ///     验证密码是否符合复杂度要求
-    /// </summary>
-    /// <param name="password">密码</param>
-    /// <param name="options">认证配置选项</param>
-    /// <returns>验证结果</returns>
-    public PasswordValidationResult ValidatePassword(string password, AuthenticationOptions options)
-    {
-        var result = new PasswordValidationResult { IsValid = true };
+    private readonly AuthenticationOptions _options;
 
-        if (!options.EnablePasswordComplexity)
-        {
-            return result;
-        }
+    public PasswordValidator(AuthenticationOptions options)
+    {
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+    }
+
+    /// <summary>
+    /// 验证密码是否符合复杂度要求
+    /// </summary>
+    /// <param name="password">待验证的密码</param>
+    /// <returns>验证结果</returns>
+    public PasswordValidationResult ValidatePassword(string password)
+    {
+        var result = new PasswordValidationResult();
 
         if (string.IsNullOrEmpty(password))
         {
-            result.IsValid = false;
-            result.Errors.Add("密码不能为空");
+            result.AddError("密码不能为空");
             return result;
         }
 
-        if (password.Length < options.MinPasswordLength)
+        // 验证密码长度
+        if (password.Length < _options.MinPasswordLength)
         {
-            result.IsValid = false;
-            result.Errors.Add($"密码长度不能小于 {options.MinPasswordLength} 个字符");
+            result.AddError($"密码长度不能小于 {_options.MinPasswordLength} 个字符");
         }
 
-        if (options.RequireDigit && !password.Any(char.IsDigit))
+        // 验证是否包含数字
+        if (_options.RequireDigit && !password.Any(char.IsDigit))
         {
-            result.IsValid = false;
-            result.Errors.Add("密码必须包含数字");
+            result.AddError("密码必须包含至少一个数字");
         }
 
-        if (options.RequireLowercase && !password.Any(char.IsLower))
+        // 验证是否包含小写字母
+        if (_options.RequireLowercase && !password.Any(char.IsLower))
         {
-            result.IsValid = false;
-            result.Errors.Add("密码必须包含小写字母");
+            result.AddError("密码必须包含至少一个小写字母");
         }
 
-        if (options.RequireUppercase && !password.Any(char.IsUpper))
+        // 验证是否包含大写字母
+        if (_options.RequireUppercase && !password.Any(char.IsUpper))
         {
-            result.IsValid = false;
-            result.Errors.Add("密码必须包含大写字母");
+            result.AddError("密码必须包含至少一个大写字母");
         }
 
-        if (options.RequireSpecialCharacter && !Regex.IsMatch(password, @"[!@#$%^&*(),.?""':{}|<>]"))
+        // 验证是否包含特殊字符
+        if (_options.RequireSpecialCharacter && !password.Any(ch => !char.IsLetterOrDigit(ch)))
         {
-            result.IsValid = false;
-            result.Errors.Add("密码必须包含特殊字符");
+            result.AddError("密码必须包含至少一个特殊字符");
         }
 
         return result;
