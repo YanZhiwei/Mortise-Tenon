@@ -1,7 +1,3 @@
-using System;
-using System.Linq;
-using Tenon.Caching.Abstractions;
-using Tenon.Hangfire.Extensions.Caching;
 using Tenon.Hangfire.Extensions.Configuration;
 
 namespace Tenon.Hangfire.Extensions.Services;
@@ -11,17 +7,6 @@ namespace Tenon.Hangfire.Extensions.Services;
 /// </summary>
 public class PasswordValidator : IPasswordValidator
 {
-    private readonly IHangfireCacheProvider _cacheProvider;
-
-    /// <summary>
-    ///     构造函数
-    /// </summary>
-    /// <param name="cacheProvider">缓存提供程序</param>
-    public PasswordValidator(IHangfireCacheProvider cacheProvider)
-    {
-        _cacheProvider = cacheProvider;
-    }
-
     /// <summary>
     ///     验证密码
     /// </summary>
@@ -30,9 +15,15 @@ public class PasswordValidator : IPasswordValidator
     /// <returns>验证结果</returns>
     public bool ValidatePassword(string password, AuthenticationOptions options)
     {
+        // 首先验证密码是否匹配
+        if (password != options.Password)
+            return false;
+
+        // 如果不启用密码复杂度验证，直接返回 true
         if (!options.EnablePasswordComplexity)
             return true;
 
+        // 验证密码复杂度
         if (string.IsNullOrEmpty(password) || password.Length < options.MinPasswordLength)
             return false;
 
@@ -45,9 +36,9 @@ public class PasswordValidator : IPasswordValidator
         if (options.RequireUppercase && !password.Any(char.IsUpper))
             return false;
 
-        if (options.RequireSpecialCharacter && !password.Any(c => !char.IsLetterOrDigit(c)))
+        if (options.RequireSpecialCharacter && password.All(char.IsLetterOrDigit))
             return false;
 
         return true;
     }
-} 
+}

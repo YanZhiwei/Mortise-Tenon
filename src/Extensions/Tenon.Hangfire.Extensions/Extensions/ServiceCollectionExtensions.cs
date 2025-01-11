@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Tenon.Caching.Abstractions;
 using Tenon.Hangfire.Extensions.Caching;
 using Tenon.Hangfire.Extensions.Configuration;
 using Tenon.Hangfire.Extensions.Filters;
@@ -42,9 +41,8 @@ public static class ServiceCollectionExtensions
         services.Configure<AuthenticationOptions>(authSection);
 
         // 注册服务
-        services.AddSingleton<IPasswordValidator>(sp => 
-            new PasswordValidator(sp.GetRequiredService<IHangfireCacheProvider>()));
-        services.AddSingleton<ILoginAttemptTracker>(sp => 
+        services.AddSingleton<IPasswordValidator, PasswordValidator>();
+        services.AddSingleton<ILoginAttemptTracker>(sp =>
             new LoginAttemptTracker(sp.GetRequiredService<IHangfireCacheProvider>()));
 
         // 添加 Hangfire 服务
@@ -62,7 +60,7 @@ public static class ServiceCollectionExtensions
         services.AddHangfireServer(options =>
         {
             options.WorkerCount = Environment.ProcessorCount * 2; // 工作线程数
-            options.Queues = new[] { "default", "critical" }; // 任务队列
+            options.Queues = new[] {"default", "critical"}; // 任务队列
             options.ServerTimeout = TimeSpan.FromMinutes(5); // 服务器超时
             options.ShutdownTimeout = TimeSpan.FromMinutes(2); // 关闭超时
             options.ServerName = $"Hangfire.Server.{Environment.MachineName}"; // 服务器名称
@@ -86,14 +84,12 @@ public static class ServiceCollectionExtensions
             throw new ArgumentNullException(nameof(hangfireOptions));
 
         var serviceProvider = app.Services;
-        
+
         // 验证必要的服务是否已注册
         var cacheProvider = serviceProvider.GetService<IHangfireCacheProvider>();
         if (cacheProvider == null)
-        {
             throw new InvalidOperationException(
                 "未找到 IHangfireCacheProvider 的实例。请确保在启动时正确注册了缓存提供程序。");
-        }
 
         var passwordValidator = serviceProvider.GetRequiredService<IPasswordValidator>();
         var loginAttemptTracker = serviceProvider.GetRequiredService<ILoginAttemptTracker>();
