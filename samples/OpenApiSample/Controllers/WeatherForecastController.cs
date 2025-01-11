@@ -9,6 +9,7 @@ namespace OpenApiSample.Controllers;
 /// </summary>
 [ApiController]
 [Route("[controller]")]
+[Authorize(Policy = "WeatherApiScope")]
 public class WeatherForecastController : ControllerBase
 {
     private static readonly string[] Summaries = new[]
@@ -19,10 +20,9 @@ public class WeatherForecastController : ControllerBase
     /// <summary>
     /// 获取天气预报列表
     /// </summary>
-    /// <param name="days">天数</param>
+    /// <param name="days">天数（逗号分隔的数组，例如：1,2,3）</param>
     /// <returns>天气预报列表</returns>
     [HttpGet]
-    [Authorize]
     public IEnumerable<WeatherForecast> Get([FromQuery] int[] days)
     {
         return Enumerable.Range(1, days.Length).Select(index => new WeatherForecast
