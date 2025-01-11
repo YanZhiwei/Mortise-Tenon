@@ -1,11 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 using Tenon.AspNetCore.OpenApi.Extensions.Options;
+using Tenon.AspNetCore.OpenApi.Extensions.Transformers;
 
 namespace Tenon.AspNetCore.OpenApi.Extensions;
 
@@ -26,6 +28,9 @@ public static class ServiceCollectionExtensions
             .Bind(configuration)
             .ValidateDataAnnotations()
             .ValidateOnStart();
+
+        services.AddSingleton<IOpenApiDocumentTransformer, BearerSecuritySchemeTransformer>();
+        services.AddSingleton<IOpenApiDocumentTransformer, CommaDelimitedArrayDocumentTransformer>();
 
         services.AddEndpointsApiExplorer();
         services.AddOpenApi();

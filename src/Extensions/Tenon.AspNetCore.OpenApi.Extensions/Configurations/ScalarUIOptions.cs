@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace Tenon.AspNetCore.OpenApi.Extensions.Options;
+namespace Tenon.AspNetCore.OpenApi.Extensions.Configurations;
 
 /// <summary>
 /// Scalar UI 配置选项
