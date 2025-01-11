@@ -20,4 +20,8 @@
     <ProjectReference Include="..\..\src\Tenon.Caching.InMemory\Tenon.Caching.InMemory.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Caching\" />
+  </ItemGroup>
+
 </Project> 

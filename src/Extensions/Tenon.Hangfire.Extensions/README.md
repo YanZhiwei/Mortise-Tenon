@@ -1,19 +1,14 @@
 # Tenon.Hangfire.Extensions
 
-Tenon.Hangfire.Extensions 是一个基于 Hangfire 的扩展库，提供了更多的功能和更好的配置选项，使 Hangfire 在 .NET 项目中的使用更加便捷和安全。
+Tenon.Hangfire.Extensions 是一个用于增强 Hangfire 功能的扩展库，提供了认证、授权和缓存等功能的统一实现。
 
 ## 功能特性
 
-- 增强的认证功能
-  - 基本认证 (Basic Authentication)
-  - 密码复杂度验证
-  - 登录失败限制
-  - IP 白名单控制
-
-- 配置优化
-  - 灵活的配置选项
-  - 支持多种存储方式
-  - 仪表板自定义
+- 基本认证（用户名/密码）
+- IP 白名单认证
+- 密码复杂度验证
+- 登录失败次数限制
+- 可扩展的缓存提供程序
 
 ## 安装
 
@@ -21,22 +16,20 @@ Tenon.Hangfire.Extensions 是一个基于 Hangfire 的扩展库，提供了更�
 dotnet add package Tenon.Hangfire.Extensions
 ```
 
-## 快速开始
+## 使用方法
 
-1. 在 `appsettings.json` 中添加配置：
+### 1. 基本配置
+
+在 `appsettings.json` 中添加配置：
 
 ```json
 {
-  "ConnectionStrings": {
-    "HangfireConnection": "hangfire.db3"
-  },
   "Hangfire": {
     "Path": "/hangfire",
-    "DashboardTitle": "任务调度中心",
+    "DashboardTitle": "任务管理面板",
     "Authentication": {
       "Username": "admin",
       "Password": "Admin@123",
-      "AuthType": "Basic",
       "EnablePasswordComplexity": true,
       "MinPasswordLength": 8,
       "RequireDigit": true,
@@ -48,65 +41,28 @@ dotnet add package Tenon.Hangfire.Extensions
     },
     "IpAuthorization": {
       "Enabled": true,
-      "AllowedIPs": [ "127.0.0.1", "::1" ],
-      "AllowedIpRanges": [ "192.168.1.0/24" ]
+      "AllowedIps": ["127.0.0.1", "::1"]
     }
   }
 }
 ```
 
-2. 在 `Program.cs` 中配置服务：
+### 2. 注册服务
 
 ```csharp
-// 配置 Hangfire 选项
-var hangfireSection = builder.Configuration.GetSection("Hangfire");
-builder.Services.Configure<HangfireOptions>(hangfireSection);
-
-// 配置认证选项
-var authSection = hangfireSection.GetSection("Authentication");
-builder.Services.Configure<AuthenticationOptions>(authSection);
+// 注册缓存提供程序
+services.AddSingleton<IHangfireCacheProvider, YourCacheProvider>();
 
 // 添加 Hangfire 服务
-builder.Services.AddHangfireServices(builder.Configuration);
-
-// 配置 SQLite 存储选项
-var storageOptions = new SQLiteStorageOptions
-{
-    // 基础配置
-    Prefix = "hangfire",                            // 表前缀
-    QueuePollInterval = TimeSpan.FromSeconds(15),   // 队列轮询间隔
-    InvisibilityTimeout = TimeSpan.FromMinutes(30), // 任务隐藏超时
-    DistributedLockLifetime = TimeSpan.FromSeconds(30), // 分布式锁超时
-    
-    // 维护配置
-    JobExpirationCheckInterval = TimeSpan.FromHours(1),   // 过期任务检查间隔
-    CountersAggregateInterval = TimeSpan.FromMinutes(5),  // 计数器聚合间隔
-    
-    // 性能配置
-    PoolSize = 50,                                  // 连接池大小
-    JournalMode = SQLiteStorageOptions.JournalModes.WAL,  // WAL模式提高并发性能
-    AutoVacuumSelected = SQLiteStorageOptions.AutoVacuum.INCREMENTAL // 增量式自动清理
-};
-
-// 添加 Hangfire 服务
-builder.Services.AddHangfire(config => config
-    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-    .UseSimpleAssemblyNameTypeSerializer()
-    .UseRecommendedSerializerSettings()
-    .UseSQLiteStorage(builder.Configuration.GetConnectionString("HangfireConnection"), storageOptions));
-
-// 配置 Hangfire 服务器选项
-builder.Services.AddHangfireServer(options =>
-{
-    options.WorkerCount = Environment.ProcessorCount * 2; // 工作线程数
-    options.Queues = new[] { "default", "critical" }; // 任务队列
-    options.ServerTimeout = TimeSpan.FromMinutes(5); // 服务器超时
-    options.ShutdownTimeout = TimeSpan.FromMinutes(2); // 关闭超时
-    options.ServerName = $"Hangfire.Server.{Environment.MachineName}"; // 服务器名称
-});
+services.AddHangfireServices(
+    configuration,
+    configureStorage: config =>
+    {
+        // 配置你的存储
+    });
 ```
 
-3. 在中间件管道中启用 Hangfire：
+### 3. 配置中间件
 
 ```csharp
 app.UseHangfire(app.Configuration.GetSection("Hangfire"));
@@ -114,56 +70,79 @@ app.UseHangfire(app.Configuration.GetSection("Hangfire"));
 
 ## 配置说明
 
-### 认证配置 (Authentication)
+### HangfireOptions
 
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| Username | 管理面板登录用户名 | admin |
-| Password | 管理面板登录密码 | - |
-| AuthType | 认证类型 (Basic) | Basic |
-| EnablePasswordComplexity | 启用密码复杂度检查 | true |
+| 属性 | 说明 | 默认值 |
+|------|------|--------|
+| Path | 仪表板路径 | "/hangfire" |
+| DashboardTitle | 仪表板标题 | "Hangfire" |
+
+### AuthenticationOptions
+
+| 属性 | 说明 | 默认值 |
+|------|------|--------|
+| Username | 用户名 | - |
+| Password | 密码 | - |
+| EnablePasswordComplexity | 启用密码复杂度验证 | false |
 | MinPasswordLength | 最小密码长度 | 8 |
-| RequireDigit | 要求包含数字 | true |
-| RequireLowercase | 要求包含小写字母 | true |
-| RequireUppercase | 要求包含大写字母 | true |
-| RequireSpecialCharacter | 要求包含特殊字符 | true |
+| RequireDigit | 要求包含数字 | false |
+| RequireLowercase | 要求包含小写字母 | false |
+| RequireUppercase | 要求包含大写字母 | false |
+| RequireSpecialCharacter | 要求包含特殊字符 | false |
 | MaxLoginAttempts | 最大登录尝试次数 | 5 |
 | LockoutDuration | 锁定时长（分钟） | 30 |
 
-### IP 授权配置 (IpAuthorization)
+### IpAuthorizationOptions
 
-| 配置项 | 说明 | 示例 |
-|--------|------|------|
-| Enabled | 启用 IP 白名单 | true |
-| AllowedIPs | 允许的 IP 地址列表 | ["127.0.0.1", "::1"] |
-| AllowedIpRanges | 允许的 IP 地址段 | ["192.168.1.0/24"] |
+| 属性 | 说明 | 默认值 |
+|------|------|--------|
+| Enabled | 启用 IP 授权 | false |
+| AllowedIps | 允许的 IP 列表 | [] |
 
-### 存储配置 (SQLiteStorageOptions)
+## 自定义缓存提供程序
 
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| Prefix | 数据库表前缀 | hangfire |
-| QueuePollInterval | 队列轮询间隔 | 15秒 |
-| InvisibilityTimeout | 任务隐藏超时 | 30分钟 |
-| DistributedLockLifetime | 分布式锁超时 | 30秒 |
-| JobExpirationCheckInterval | 过期任务检查间隔 | 1小时 |
-| CountersAggregateInterval | 计数器聚合间隔 | 5分钟 |
-| PoolSize | 连接池大小 | 50 |
-| JournalMode | 日志模式 | WAL |
-| AutoVacuumSelected | 自动清理模式 | INCREMENTAL |
+实现 `IHangfireCacheProvider` 接口来创建自定义缓存提供程序：
+
+```csharp
+public class CustomCacheProvider : IHangfireCacheProvider
+{
+    public bool Set<T>(string cacheKey, T cacheValue, TimeSpan expiration)
+    {
+        // 实现缓存设置逻辑
+    }
+
+    public CacheValue<T> Get<T>(string cacheKey)
+    {
+        // 实现缓存获取逻辑
+    }
+
+    // 实现其他接口方法...
+}
+```
+
+## 最佳实践
+
+1. **安全性**
+   - 在生产环境中使用强密码
+   - 配置适当的 IP 白名单
+   - 启用密码复杂度验证
+
+2. **性能**
+   - 选择合适的缓存提供程序
+   - 合理配置缓存过期时间
+   - 监控登录失败次数
+
+3. **可维护性**
+   - 使用配置文件管理设置
+   - 实现自定义的日志记录
+   - 定期更新密码和白名单
 
 ## 依赖项
 
-- .NET 9.0
-- Hangfire (1.8.17)
-- Microsoft.Extensions.Configuration (9.0.0)
-- Microsoft.Extensions.DependencyInjection (9.0.0)
-- Microsoft.Extensions.Options (9.0.0)
-
-## 许可证
-
-MIT
-
-## 贡献
-
-欢迎提交问题和建议到我们的 GitHub 仓库。 
+- Hangfire.AspNetCore
+- Hangfire.Core
+- Microsoft.AspNetCore.Http.Abstractions
+- Microsoft.Extensions.Configuration.Abstractions
+- Microsoft.Extensions.DependencyInjection.Abstractions
+- Microsoft.Extensions.Logging.Abstractions
+- Microsoft.Extensions.Options.ConfigurationExtensions 
