@@ -5,6 +5,8 @@ using Tenon.Hangfire.Extensions.Configuration;
 using Tenon.Hangfire.Extensions.Extensions;
 using Tenon.Caching.Abstractions;
 using Tenon.Caching.InMemory;
+using HangfireSample.Caching;
+using Tenon.Hangfire.Extensions.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +38,9 @@ builder.Services.AddSingleton<ICacheProvider>(provider =>
         physicalMemoryLimitPercentage: 10,
         pollingInterval: TimeSpan.FromMinutes(5)
     ));
+
+// 注册 Hangfire 缓存提供程序
+builder.Services.AddSingleton<IHangfireCacheProvider, HangfireMemoryCacheProvider>();
 
 // 添加 Hangfire 服务
 builder.Services.AddHangfireServices(builder.Configuration);

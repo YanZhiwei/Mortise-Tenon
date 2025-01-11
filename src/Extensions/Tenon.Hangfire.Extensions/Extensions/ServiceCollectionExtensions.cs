@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Tenon.Caching.Abstractions;
+using Tenon.Hangfire.Extensions.Caching;
 using Tenon.Hangfire.Extensions.Configuration;
 using Tenon.Hangfire.Extensions.Filters;
 using Tenon.Hangfire.Extensions.Services;
@@ -21,40 +22,51 @@ public static class ServiceCollectionExtensions
     /// <param name="services">服务集合</param>
     /// <param name="configuration">配置</param>
     /// <param name="setupAction">配置 Hangfire 选项的委托</param>
-    /// <param name="configureCache">配置缓存提供程序的委托</param>
+    /// <param name="configureStorage">配置 Hangfire 存储的委托</param>
     /// <returns>服务集合</returns>
     public static IServiceCollection AddHangfireServices(
         this IServiceCollection services,
         IConfiguration configuration,
         Action<HangfireOptions>? setupAction = null,
-        Action<IServiceCollection>? configureCache = null)
+        Action<IGlobalConfiguration>? configureStorage = null)
     {
-        // 注册配置
+        // 注册 Hangfire 配置
+        var hangfireSection = configuration.GetSection("Hangfire");
         if (setupAction != null)
             services.Configure(setupAction);
         else
-            services.Configure<HangfireOptions>(configuration.GetSection("Hangfire"));
+            services.Configure<HangfireOptions>(hangfireSection);
 
-        // 注册缓存服务
-        if (configureCache != null)
-        {
-            configureCache(services);
-        }
-        else
-        {
-            // 确保已注册 ICacheProvider
-            var descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(ICacheProvider));
-            if (descriptor == null)
-            {
-                throw new InvalidOperationException(
-                    "未找到 ICacheProvider 的注册。请在调用 AddHangfireServices 之前注册缓存提供程序，" +
-                    "或使用 configureCache 参数配置缓存服务。");
-            }
-        }
+        // 配置认证选项
+        var authSection = hangfireSection.GetSection("Authentication");
+        services.Configure<AuthenticationOptions>(authSection);
 
         // 注册服务
-        services.AddSingleton<IPasswordValidator, PasswordValidator>();
-        services.AddSingleton<ILoginAttemptTracker, LoginAttemptTracker>();
+        services.AddSingleton<IPasswordValidator>(sp => 
+            new PasswordValidator(sp.GetRequiredService<IHangfireCacheProvider>()));
+        services.AddSingleton<ILoginAttemptTracker>(sp => 
+            new LoginAttemptTracker(sp.GetRequiredService<IHangfireCacheProvider>()));
+
+        // 添加 Hangfire 服务
+        services.AddHangfire(config =>
+        {
+            config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings();
+
+            // 允许用户配置存储
+            configureStorage?.Invoke(config);
+        });
+
+        // 配置 Hangfire 服务器选项
+        services.AddHangfireServer(options =>
+        {
+            options.WorkerCount = Environment.ProcessorCount * 2; // 工作线程数
+            options.Queues = new[] { "default", "critical" }; // 任务队列
+            options.ServerTimeout = TimeSpan.FromMinutes(5); // 服务器超时
+            options.ShutdownTimeout = TimeSpan.FromMinutes(2); // 关闭超时
+            options.ServerName = $"Hangfire.Server.{Environment.MachineName}"; // 服务器名称
+        });
 
         return services;
     }
@@ -76,11 +88,11 @@ public static class ServiceCollectionExtensions
         var serviceProvider = app.Services;
         
         // 验证必要的服务是否已注册
-        var cacheProvider = serviceProvider.GetService<ICacheProvider>();
+        var cacheProvider = serviceProvider.GetService<IHangfireCacheProvider>();
         if (cacheProvider == null)
         {
             throw new InvalidOperationException(
-                "未找到 ICacheProvider 的实例。请确保在启动时正确注册了缓存提供程序。");
+                "未找到 IHangfireCacheProvider 的实例。请确保在启动时正确注册了缓存提供程序。");
         }
 
         var passwordValidator = serviceProvider.GetRequiredService<IPasswordValidator>();
