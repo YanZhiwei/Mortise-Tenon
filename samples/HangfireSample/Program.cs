@@ -26,7 +26,7 @@ builder.Services.AddSingleton<IHangfireCacheProvider, HangfireMemoryCacheProvide
 
 // 添加 Hangfire 服务
 builder.Services.AddHangfireServices(
-    builder.Configuration,
+    builder.Configuration.GetSection("Hangfire"),
     configureStorage: config =>
     {
         // 配置 SQLite 存储
@@ -65,7 +65,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // 使用 Hangfire
-app.UseHangfire(app.Configuration.GetSection("Hangfire"));
+app.UseHangfire();
 
 app.UseAuthentication();
 app.UseAuthorization();

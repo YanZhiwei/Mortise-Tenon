@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Tenon.Hangfire.Extensions.Caching;
 using Tenon.Hangfire.Extensions.Configuration;
 using Tenon.Hangfire.Extensions.Filters;
@@ -21,23 +22,25 @@ public static class ServiceCollectionExtensions
     ///     添加 Hangfire 服务
     /// </summary>
     /// <param name="services">服务集合</param>
-    /// <param name="configuration">配置</param>
+    /// <param name="configuration">Hangfire 配置节</param>
     /// <param name="setupAction">配置 Hangfire 选项的委托</param>
     /// <param name="configureStorage">配置 Hangfire 存储的委托</param>
     /// <returns>服务集合</returns>
     public static IServiceCollection AddHangfireServices(
         this IServiceCollection services,
-        IConfiguration configuration,
+        IConfigurationSection configuration,
         Action<HangfireOptions>? setupAction = null,
         Action<IGlobalConfiguration>? configureStorage = null)
     {
+        ArgumentNullException.ThrowIfNull(configuration);
+
         // 注册 Hangfire 配置
-        var hangfireSection = configuration.GetSection("Hangfire");
-        var hangfireOptions = hangfireSection.Get<HangfireOptions>();
+        services.Configure<HangfireOptions>(configuration);
         
+        var hangfireOptions = configuration.Get<HangfireOptions>();
         if (hangfireOptions == null)
         {
-            throw new InvalidOperationException("无法从配置中读取 Hangfire 选项");
+            throw new InvalidOperationException($"无法从配置节点 '{configuration.Path}' 中读取 Hangfire 选项");
         }
 
         // 验证 IP 授权配置
@@ -51,14 +54,6 @@ public static class ServiceCollectionExtensions
             setupAction(hangfireOptions);
             services.Configure(setupAction);
         }
-        else
-        {
-            services.Configure<HangfireOptions>(hangfireSection);
-        }
-
-        // 配置认证选项
-        var authSection = hangfireSection.GetSection("Authentication");
-        services.Configure<AuthenticationOptions>(authSection);
 
         // 注册服务
         services.AddSingleton<IPasswordValidator, PasswordValidator>();
@@ -93,18 +88,11 @@ public static class ServiceCollectionExtensions
     ///     使用 Hangfire
     /// </summary>
     /// <param name="app">应用程序构建器</param>
-    /// <param name="hangfireSection">Hangfire 配置节</param>
-    public static void UseHangfire(this WebApplication app, IConfigurationSection hangfireSection)
+    public static void UseHangfire(this WebApplication app)
     {
-        if (hangfireSection == null)
-            throw new ArgumentNullException(nameof(hangfireSection));
-
-        var hangfireOptions = hangfireSection.Get<HangfireOptions>();
-        if (hangfireOptions == null)
-            throw new ArgumentNullException(nameof(hangfireOptions));
-
         var serviceProvider = app.Services;
         var logger = serviceProvider.GetRequiredService<ILogger<HangfireService>>();
+        var hangfireOptions = serviceProvider.GetRequiredService<IOptions<HangfireOptions>>().Value;
 
         // 验证必要的服务是否已注册
         var cacheProvider = serviceProvider.GetService<IHangfireCacheProvider>();
