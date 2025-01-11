@@ -1,6 +1,9 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 using Tenon.AspNetCore.OpenApi.Extensions.Options;
 
@@ -15,12 +18,36 @@ public static class ServiceCollectionExtensions
     /// 添加 OpenAPI 服务（使用 Scalar UI）
     /// </summary>
     /// <param name="services">服务集合</param>
+    /// <param name="configuration">配置节</param>
+    /// <returns>服务集合</returns>
+    public static IServiceCollection AddScalarOpenApi(this IServiceCollection services, IConfigurationSection configuration)
+    {
+        services.AddOptions<ScalarUIOptions>()
+            .Bind(configuration)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddEndpointsApiExplorer();
+        services.AddOpenApi();
+
+        return services;
+    }
+
+    /// <summary>
+    /// 添加 OpenAPI 服务（使用 Scalar UI）
+    /// </summary>
+    /// <param name="services">服务集合</param>
     /// <param name="configure">配置选项</param>
     /// <returns>服务集合</returns>
-    public static IServiceCollection AddScalarOpenApi(this IServiceCollection services, Action<TenonScalarOptions>? configure = null)
+    public static IServiceCollection AddScalarOpenApi(this IServiceCollection services, Action<ScalarUIOptions>? configure = null)
     {
-        var options = new TenonScalarOptions();
-        configure?.Invoke(options);
+        if (configure != null)
+        {
+            services.AddOptions<ScalarUIOptions>()
+                .Configure(configure)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+        }
 
         services.AddEndpointsApiExplorer();
         services.AddOpenApi();
@@ -32,12 +59,11 @@ public static class ServiceCollectionExtensions
     /// 使用 OpenAPI UI（Scalar）
     /// </summary>
     /// <param name="app">应用程序构建器</param>
-    /// <param name="configure">配置选项</param>
     /// <returns>应用程序构建器</returns>
-    public static IEndpointRouteBuilder UseScalarOpenApi(this IEndpointRouteBuilder app, Action<TenonScalarOptions>? configure = null)
+    public static IEndpointRouteBuilder UseScalarOpenApi(this IEndpointRouteBuilder app)
     {
-        var options = new TenonScalarOptions();
-        configure?.Invoke(options);
+        var options = app.ServiceProvider.GetRequiredService<IOptions<ScalarUIOptions>>().Value;
+        Validator.ValidateObject(options, new ValidationContext(options), validateAllProperties: true);
 
         app.MapOpenApi();
         app.MapScalarApiReference(config =>
@@ -45,7 +71,7 @@ public static class ServiceCollectionExtensions
             config.Title = options.Title;
             config.DarkMode = options.Theme.DarkMode;
 
-            if (options.EnableAuthorization && options.OAuth2 != null)
+            if (options.OAuth2 != null)
             {
                 config.Authentication = new ScalarAuthenticationOptions
                 {
