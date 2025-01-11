@@ -1,7 +1,6 @@
 using Hangfire.Storage.SQLite;
 using HangfireSample.Caching;
 using HangfireSample.Services;
-using Tenon.Caching.InMemory;
 using Tenon.Hangfire.Extensions.Caching;
 using Tenon.Hangfire.Extensions.Extensions;
 
@@ -16,7 +15,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<SampleJobService>();
 
 // 注册 Hangfire 缓存提供程序
-builder.Services.AddSingleton<IHangfireCacheProvider, MemoryCacheProvider>();
+builder.Services.AddSingleton<IHangfireCacheProvider, HangfireMemoryCacheProvider>();
 
 // 添加 Hangfire 服务
 builder.Services.AddHangfireServices(
