@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OpenApiSample.Models;
 
 namespace OpenApiSample.Controllers;
 
@@ -7,36 +8,26 @@ namespace OpenApiSample.Controllers;
 /// 天气预报控制器
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 public class WeatherForecastController : ControllerBase
 {
     private static readonly string[] Summaries = new[]
     {
-        "冰冻", "寒冷", "凉爽", "温和", "温暖", "炎热"
+        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
     };
 
-    private readonly ILogger<WeatherForecastController> _logger;
-
     /// <summary>
-    /// 构造函数
+    /// 获取天气预报列表
     /// </summary>
-    /// <param name="logger">日志</param>
-    public WeatherForecastController(ILogger<WeatherForecastController> logger)
-    {
-        _logger = logger;
-    }
-
-    /// <summary>
-    /// 获取天气预报
-    /// </summary>
+    /// <param name="days">天数</param>
     /// <returns>天气预报列表</returns>
     [HttpGet]
     [Authorize]
-    public IEnumerable<WeatherForecast> Get()
+    public IEnumerable<WeatherForecast> Get([FromQuery] int[] days)
     {
-        return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+        return Enumerable.Range(1, days.Length).Select(index => new WeatherForecast
         {
-            Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+            Date = DateOnly.FromDateTime(DateTime.Now.AddDays(days[index - 1])),
             TemperatureC = Random.Shared.Next(-20, 55),
             Summary = Summaries[Random.Shared.Next(Summaries.Length)]
         })

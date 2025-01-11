@@ -1,4 +1,4 @@
-namespace OpenApiSample;
+namespace OpenApiSample.Models;
 
 /// <summary>
 /// 天气预报

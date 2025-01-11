@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
-using Tenon.AspNetCore.OpenApi.Extensions.Options;
+using Tenon.AspNetCore.OpenApi.Extensions.Configurations;
 using Tenon.AspNetCore.OpenApi.Extensions.Transformers;
 
 namespace Tenon.AspNetCore.OpenApi.Extensions;

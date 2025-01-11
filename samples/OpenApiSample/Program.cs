@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Tenon.AspNetCore.OpenApi.Extensions;
-using Tenon.AspNetCore.OpenApi.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
