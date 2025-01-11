@@ -29,11 +29,13 @@ public static class ServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        services.AddSingleton<IOpenApiDocumentTransformer, BearerSecuritySchemeTransformer>();
-        services.AddSingleton<IOpenApiDocumentTransformer, CommaDelimitedArrayDocumentTransformer>();
 
         services.AddEndpointsApiExplorer();
-        services.AddOpenApi();
+        services.AddOpenApi(options =>
+        {
+            options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+            options.AddDocumentTransformer<CommaDelimitedArrayDocumentTransformer>();
+        });
 
         return services;
     }
@@ -91,4 +93,4 @@ public static class ServiceCollectionExtensions
 
         return app;
     }
-} 
+}
