@@ -1,12 +1,9 @@
 using Hangfire.Storage.SQLite;
 using HangfireSample.Caching;
 using HangfireSample.Services;
+using Scalar.AspNetCore;
 using Tenon.Hangfire.Extensions.Caching;
 using Tenon.Hangfire.Extensions.Extensions;
-using Tenon.AspNetCore.OpenApi.Extensions;
-using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.OpenApi;
-using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,11 +63,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
 
 // 使用 Hangfire
 app.UseHangfire(app.Configuration.GetSection("Hangfire"));
+
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 
 app.Run();

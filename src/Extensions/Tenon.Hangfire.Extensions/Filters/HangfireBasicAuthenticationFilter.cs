@@ -1,7 +1,4 @@
-﻿using System;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -15,10 +12,10 @@ namespace Tenon.Hangfire.Extensions.Filters;
 /// </summary>
 public sealed class HangfireBasicAuthenticationFilter : IDashboardAuthorizationFilter
 {
-    private readonly ILoginAttemptTracker _loginAttemptTracker;
-    private readonly IPasswordValidator _passwordValidator;
-    private readonly AuthenticationOptions _options;
     private readonly ILogger<HangfireBasicAuthenticationFilter> _logger;
+    private readonly ILoginAttemptTracker _loginAttemptTracker;
+    private readonly AuthenticationOptions _options;
+    private readonly IPasswordValidator _passwordValidator;
 
     /// <summary>
     ///     构造函数
@@ -47,6 +44,16 @@ public sealed class HangfireBasicAuthenticationFilter : IDashboardAuthorizationF
     public bool Authorize(DashboardContext context)
     {
         var httpContext = context.GetHttpContext();
+
+        // 检查是否需要跳过基本认证
+        if (httpContext.Items.TryGetValue("SkipBasicAuth", out var skipAuth) && skipAuth is true)
+        {
+            _logger.LogInformation("IP 验证已通过，跳过基本认证");
+            return true;
+        }
+
+        _logger.LogInformation("开始基本认证验证");
+
         var header = httpContext.Request.Headers["Authorization"].ToString();
 
         if (string.IsNullOrEmpty(header) || !header.StartsWith("Basic "))
@@ -98,7 +105,7 @@ public sealed class HangfireBasicAuthenticationFilter : IDashboardAuthorizationF
     {
         try
         {
-            var credentials = System.Text.Encoding.UTF8.GetString(
+            var credentials = Encoding.UTF8.GetString(
                 Convert.FromBase64String(header.Substring(6)));
             var parts = credentials.Split(':');
             if (parts.Length != 2)

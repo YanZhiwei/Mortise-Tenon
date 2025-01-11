@@ -1,7 +1,9 @@
 ﻿using Hangfire;
+using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Tenon.Hangfire.Extensions.Caching;
 using Tenon.Hangfire.Extensions.Configuration;
@@ -31,10 +33,28 @@ public static class ServiceCollectionExtensions
     {
         // 注册 Hangfire 配置
         var hangfireSection = configuration.GetSection("Hangfire");
+        var hangfireOptions = hangfireSection.Get<HangfireOptions>();
+        
+        if (hangfireOptions == null)
+        {
+            throw new InvalidOperationException("无法从配置中读取 Hangfire 选项");
+        }
+
+        // 验证 IP 授权配置
+        if (hangfireOptions.IpAuthorization.Enabled && !hangfireOptions.IpAuthorization.IsValid())
+        {
+            throw new InvalidOperationException("IP 授权配置无效：未配置允许的 IP 地址或 IP 范围");
+        }
+
         if (setupAction != null)
+        {
+            setupAction(hangfireOptions);
             services.Configure(setupAction);
+        }
         else
+        {
             services.Configure<HangfireOptions>(hangfireSection);
+        }
 
         // 配置认证选项
         var authSection = hangfireSection.GetSection("Authentication");
@@ -84,6 +104,7 @@ public static class ServiceCollectionExtensions
             throw new ArgumentNullException(nameof(hangfireOptions));
 
         var serviceProvider = app.Services;
+        var logger = serviceProvider.GetRequiredService<ILogger<HangfireService>>();
 
         // 验证必要的服务是否已注册
         var cacheProvider = serviceProvider.GetService<IHangfireCacheProvider>();
@@ -94,22 +115,56 @@ public static class ServiceCollectionExtensions
         var passwordValidator = serviceProvider.GetRequiredService<IPasswordValidator>();
         var loginAttemptTracker = serviceProvider.GetRequiredService<ILoginAttemptTracker>();
 
-        app.UseHangfireDashboard(hangfireOptions.Path, new DashboardOptions
+        // 准备授权过滤器列表
+        var authFilters = new List<IDashboardAuthorizationFilter>();
+
+        // 添加 IP 授权过滤器（如果启用）
+        if (hangfireOptions.IpAuthorization.Enabled)
         {
-            Authorization =
-            [
-                new HangfireBasicAuthenticationFilter(
-                    loginAttemptTracker,
-                    passwordValidator,
-                    hangfireOptions.Authentication,
-                    app.Services.GetRequiredService<ILogger<HangfireBasicAuthenticationFilter>>()),
-                new HangfireIpAuthorizationFilter(
-                    hangfireOptions.IpAuthorization,
-                    app.Services.GetRequiredService<ILogger<HangfireIpAuthorizationFilter>>())
-            ],
+            logger.LogInformation("IP 授权已启用");
+            
+            if (!hangfireOptions.IpAuthorization.IsValid())
+            {
+                logger.LogWarning("IP 授权配置无效：未配置允许的 IP 地址或 IP 范围");
+                throw new InvalidOperationException("IP 授权配置无效：未配置允许的 IP 地址或 IP 范围");
+            }
+
+            logger.LogInformation("允许的 IP: {AllowedIPs}", string.Join(", ", hangfireOptions.IpAuthorization.AllowedIPs));
+            logger.LogInformation("允许的 IP 范围: {AllowedIpRanges}", string.Join(", ", hangfireOptions.IpAuthorization.AllowedIpRanges));
+            logger.LogInformation("IP 验证通过时是否跳过基本认证: {SkipBasicAuth}", hangfireOptions.SkipBasicAuthenticationIfIpAuthorized);
+
+            var ipFilter = new HangfireIpAuthorizationFilter(
+                hangfireOptions.IpAuthorization,
+                app.Services.GetRequiredService<ILogger<HangfireIpAuthorizationFilter>>(),
+                hangfireOptions.SkipBasicAuthenticationIfIpAuthorized);
+            authFilters.Add(ipFilter);
+        }
+        else
+        {
+            logger.LogWarning("IP 授权未启用");
+        }
+
+        // 添加基本认证过滤器
+        var basicAuthFilter = new HangfireBasicAuthenticationFilter(
+            loginAttemptTracker,
+            passwordValidator,
+            hangfireOptions.Authentication,
+            app.Services.GetRequiredService<ILogger<HangfireBasicAuthenticationFilter>>());
+        authFilters.Add(basicAuthFilter);
+
+        // 根据环境配置防伪令牌设置
+        var ignoreAntiforgeryToken = app.Environment.IsDevelopment() || hangfireOptions.IgnoreAntiforgeryToken;
+        logger.LogInformation("防伪令牌验证: {Status}", ignoreAntiforgeryToken ? "已禁用" : "已启用");
+
+        var dashboardOptions = new DashboardOptions
+        {
+            Authorization = authFilters,
             DashboardTitle = hangfireOptions.DashboardTitle,
-            IgnoreAntiforgeryToken = true, // 在开发环境可以禁用，生产环境建议启用
-            DisplayStorageConnectionString = false // 隐藏连接字符串
-        });
+            IgnoreAntiforgeryToken = ignoreAntiforgeryToken,
+            DisplayStorageConnectionString = false
+        };
+
+        app.UseHangfireDashboard(hangfireOptions.Path, dashboardOptions);
+        logger.LogInformation("Hangfire 仪表板已配置在路径: {Path}", hangfireOptions.Path);
     }
 }
