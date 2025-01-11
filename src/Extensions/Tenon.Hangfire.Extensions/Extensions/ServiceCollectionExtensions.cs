@@ -25,12 +25,14 @@ public static class ServiceCollectionExtensions
     /// <param name="configuration">Hangfire 配置节</param>
     /// <param name="setupAction">配置 Hangfire 选项的委托</param>
     /// <param name="configureStorage">配置 Hangfire 存储的委托</param>
+    /// <param name="configureServer">配置 Hangfire 服务器选项的委托</param>
     /// <returns>服务集合</returns>
     public static IServiceCollection AddHangfireServices(
         this IServiceCollection services,
         IConfigurationSection configuration,
         Action<HangfireOptions>? setupAction = null,
-        Action<IGlobalConfiguration>? configureStorage = null)
+        Action<IGlobalConfiguration>? configureStorage = null,
+        Action<BackgroundJobServerOptions>? configureServer = null)
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
@@ -74,11 +76,15 @@ public static class ServiceCollectionExtensions
         // 配置 Hangfire 服务器选项
         services.AddHangfireServer(options =>
         {
+            // 默认配置
             options.WorkerCount = Environment.ProcessorCount * 2; // 工作线程数
             options.Queues = new[] {"default", "critical"}; // 任务队列
             options.ServerTimeout = TimeSpan.FromMinutes(5); // 服务器超时
             options.ShutdownTimeout = TimeSpan.FromMinutes(2); // 关闭超时
             options.ServerName = $"Hangfire.Server.{Environment.MachineName}"; // 服务器名称
+
+            // 允许用户自定义配置
+            configureServer?.Invoke(options);
         });
 
         return services;
