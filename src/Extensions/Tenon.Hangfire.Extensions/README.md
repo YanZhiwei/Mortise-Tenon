@@ -1,148 +1,177 @@
 # Tenon.Hangfire.Extensions
 
-Tenon.Hangfire.Extensions 是一个用于增强 Hangfire 功能的扩展库，提供了认证、授权和缓存等功能的统一实现。
+Hangfire 扩展包，提供了更灵活的配置选项和额外的功能特性。
 
 ## 功能特性
 
-- 基本认证（用户名/密码）
-- IP 白名单认证
-- 密码复杂度验证
-- 登录失败次数限制
-- 可扩展的缓存提供程序
+- IP 白名单授权
+- 基本认证支持
+- 灵活的配置选项
+- 内置缓存支持
+- 环境感知配置
+- 日志记录增强
 
-## 安装
+## 示例项目
 
+完整的使用示例请参考 [HangfireSample](../../samples/HangfireSample/README.md) 项目，其中包含：
+- SQLite 存储配置示例
+- 多种服务器配置方式
+- 完整的安全认证配置
+- 各类任务示例代码
+- 性能优化建议
+
+## 快速开始
+
+1. 安装 NuGet 包：
 ```bash
 dotnet add package Tenon.Hangfire.Extensions
 ```
 
-## 使用方法
+2. 注册服务：
+```csharp
+// 注册 Hangfire 缓存提供程序
+services.AddSingleton<IHangfireCacheProvider, HangfireMemoryCacheProvider>();
 
-### 1. 基本配置
+// 添加 Hangfire 服务
+services.AddHangfireServices(
+    configuration.GetSection("Hangfire"),
+    configureStorage: config => 
+    {
+        // 配置存储
+    },
+    configureServer: options => 
+    {
+        // 配置服务器选项
+    });
+```
 
-在 `appsettings.json` 中添加配置：
+3. 配置中间件：
+```csharp
+app.UseHangfire();
+```
+
+## 配置说明
+
+### appsettings.json 配置示例
 
 ```json
 {
   "Hangfire": {
     "Path": "/hangfire",
-    "DashboardTitle": "任务管理面板",
-    "Authentication": {
-      "Username": "admin",
-      "Password": "Admin@123",
-      "EnablePasswordComplexity": true,
-      "MinPasswordLength": 8,
-      "RequireDigit": true,
-      "RequireLowercase": true,
-      "RequireUppercase": true,
-      "RequireSpecialCharacter": true,
-      "MaxLoginAttempts": 5,
-      "LockoutDuration": 30
+    "DashboardTitle": "任务调度中心",
+    "IgnoreAntiforgeryToken": true,
+    "SkipBasicAuthenticationIfIpAuthorized": true,
+    
+    "Server": {
+      "WorkerCount": 10,
+      "Queues": [ "critical", "default", "low" ],
+      "ServerTimeoutMinutes": 5,
+      "ShutdownTimeoutMinutes": 2,
+      "ServerName": "CustomHangfireServer"
     },
+    
     "IpAuthorization": {
       "Enabled": true,
-      "AllowedIps": ["127.0.0.1", "::1"]
+      "AllowedIPs": [ "127.0.0.1", "::1" ],
+      "AllowedIpRanges": [ "192.168.1.0/24" ]
+    },
+    
+    "Authentication": {
+      "Username": "admin",
+      "Password": "123456",
+      "MaxFailedAttempts": 3,
+      "LockoutTime": "00:05:00"
     }
   }
 }
 ```
 
-### 2. 注册服务
+### 服务器配置方式
 
+1. 环境感知配置：
 ```csharp
-// 注册缓存提供程序
-services.AddSingleton<IHangfireCacheProvider, YourCacheProvider>();
-
-// 添加 Hangfire 服务
-services.AddHangfireServices(
-    configuration,
-    configureStorage: config =>
-    {
-        // 配置你的存储
-    });
-```
-
-### 3. 配置中间件
-
-```csharp
-app.UseHangfire(app.Configuration.GetSection("Hangfire"));
-```
-
-## 配置说明
-
-### HangfireOptions
-
-| 属性 | 说明 | 默认值 |
-|------|------|--------|
-| Path | 仪表板路径 | "/hangfire" |
-| DashboardTitle | 仪表板标题 | "Hangfire" |
-
-### AuthenticationOptions
-
-| 属性 | 说明 | 默认值 |
-|------|------|--------|
-| Username | 用户名 | - |
-| Password | 密码 | - |
-| EnablePasswordComplexity | 启用密码复杂度验证 | false |
-| MinPasswordLength | 最小密码长度 | 8 |
-| RequireDigit | 要求包含数字 | false |
-| RequireLowercase | 要求包含小写字母 | false |
-| RequireUppercase | 要求包含大写字母 | false |
-| RequireSpecialCharacter | 要求包含特殊字符 | false |
-| MaxLoginAttempts | 最大登录尝试次数 | 5 |
-| LockoutDuration | 锁定时长（分钟） | 30 |
-
-### IpAuthorizationOptions
-
-| 属性 | 说明 | 默认值 |
-|------|------|--------|
-| Enabled | 启用 IP 授权 | false |
-| AllowedIps | 允许的 IP 列表 | [] |
-
-## 自定义缓存提供程序
-
-实现 `IHangfireCacheProvider` 接口来创建自定义缓存提供程序：
-
-```csharp
-public class CustomCacheProvider : IHangfireCacheProvider
+if (environment.IsDevelopment())
 {
-    public bool Set<T>(string cacheKey, T cacheValue, TimeSpan expiration)
-    {
-        // 实现缓存设置逻辑
-    }
+    options.WorkerCount = 5;
+    options.Queues = new[] { "development", "default" };
+}
+```
 
-    public CacheValue<T> Get<T>(string cacheKey)
+2. 配置文件配置：
+```csharp
+var serverSection = configuration.GetSection("Hangfire:Server");
+if (serverSection.Exists())
+{
+    var workerCount = serverSection.GetValue<int?>("WorkerCount");
+    if (workerCount.HasValue)
     {
-        // 实现缓存获取逻辑
+        options.WorkerCount = workerCount.Value;
     }
+}
+```
 
-    // 实现其他接口方法...
+3. 环境变量配置：
+```csharp
+var envWorkerCount = Environment.GetEnvironmentVariable("HANGFIRE_WORKER_COUNT");
+if (!string.IsNullOrEmpty(envWorkerCount) && int.TryParse(envWorkerCount, out var count))
+{
+    options.WorkerCount = count;
+}
+```
+
+4. 动态计算配置：
+```csharp
+options.WorkerCount = Math.Min(
+    Environment.ProcessorCount * 5,
+    Math.Max(5, Environment.ProcessorCount * 2)
+);
+```
+
+## 安全特性
+
+### IP 授权
+- 支持具体 IP 地址白名单
+- 支持 CIDR 格式的 IP 范围
+- 可选择性跳过基本认证
+
+### 基本认证
+- 用户名密码认证
+- 登录失败次数限制
+- 账户锁定机制
+- 密码复杂度验证
+
+## 日志记录
+
+内置详细的日志记录：
+```csharp
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Hangfire": "Information",
+      "Tenon.Hangfire.Extensions.Filters": "Debug"
+    }
+  }
 }
 ```
 
 ## 最佳实践
 
-1. **安全性**
-   - 在生产环境中使用强密码
+1. 环境配置：
+   - 开发环境使用较少的工作线程
+   - 生产环境根据负载调整线程数
+   - 不同环境使用不同的队列优先级
+
+2. 安全配置：
+   - 生产环境禁用 IgnoreAntiforgeryToken
+   - 使用复杂的密码
    - 配置适当的 IP 白名单
-   - 启用密码复杂度验证
 
-2. **性能**
-   - 选择合适的缓存提供程序
-   - 合理配置缓存过期时间
-   - 监控登录失败次数
+3. 性能优化：
+   - 根据 CPU 核心数配置工作线程
+   - 合理设置队列优先级
+   - 适当配置超时时间
 
-3. **可维护性**
-   - 使用配置文件管理设置
-   - 实现自定义的日志记录
-   - 定期更新密码和白名单
+## 许可证
 
-## 依赖项
-
-- Hangfire.AspNetCore
-- Hangfire.Core
-- Microsoft.AspNetCore.Http.Abstractions
-- Microsoft.Extensions.Configuration.Abstractions
-- Microsoft.Extensions.DependencyInjection.Abstractions
-- Microsoft.Extensions.Logging.Abstractions
-- Microsoft.Extensions.Options.ConfigurationExtensions 
+MIT 
