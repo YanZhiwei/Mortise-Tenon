@@ -37,18 +37,18 @@ public class HangfireIpAuthorizationFilter : IDashboardAuthorizationFilter
     /// <returns>是否授权通过</returns>
     public bool Authorize(DashboardContext context)
     {
-        _logger.LogInformation("开始 IP 授权验证");
+        _logger.LogDebug("开始 IP 授权验证");
 
         if (!_options.Enabled)
         {
-            _logger.LogInformation("IP 授权未启用");
+            _logger.LogDebug("IP 授权未启用");
             return true;
         }
 
         var httpContext = context.GetHttpContext();
         var remoteIp = httpContext.Connection.RemoteIpAddress?.ToString();
 
-        _logger.LogInformation("当前访问 IP: {RemoteIp}", remoteIp);
+        _logger.LogDebug("当前访问 IP: {RemoteIp}", remoteIp);
 
         if (string.IsNullOrEmpty(remoteIp))
         {
@@ -56,21 +56,21 @@ public class HangfireIpAuthorizationFilter : IDashboardAuthorizationFilter
             return false;
         }
 
-        _logger.LogInformation("允许的 IP 列表: {AllowedIPs}", string.Join(", ", _options.AllowedIPs));
-        _logger.LogInformation("允许的 IP 范围: {AllowedIpRanges}", string.Join(", ", _options.AllowedIpRanges));
+        _logger.LogDebug("允许的 IP 列表: {AllowedIPs}", string.Join(", ", _options.AllowedIPs));
+        _logger.LogDebug("允许的 IP 范围: {AllowedIpRanges}", string.Join(", ", _options.AllowedIpRanges));
 
         var isAuthorized = false;
 
         // 检查是否在允许的 IP 列表中
         if (_options.AllowedIPs.Contains(remoteIp))
         {
-            _logger.LogInformation("IP {RemoteIp} 在允许列表中", remoteIp);
+            _logger.LogDebug("IP {RemoteIp} 在允许列表中", remoteIp);
             isAuthorized = true;
         }
         // 检查是否在允许的 IP 范围内
         else if (_options.AllowedIpRanges.Any(range => IsIpInRange(remoteIp, range)))
         {
-            _logger.LogInformation("IP {RemoteIp} 在允许范围内", remoteIp);
+            _logger.LogDebug("IP {RemoteIp} 在允许范围内", remoteIp);
             isAuthorized = true;
         }
         else
@@ -82,7 +82,7 @@ public class HangfireIpAuthorizationFilter : IDashboardAuthorizationFilter
         if (isAuthorized && _skipBasicAuthIfAuthorized)
         {
             httpContext.Items["SkipBasicAuth"] = true;
-            _logger.LogInformation("IP 验证通过，将跳过基本认证");
+            _logger.LogDebug("IP 验证通过，将跳过基本认证");
         }
 
         return isAuthorized;

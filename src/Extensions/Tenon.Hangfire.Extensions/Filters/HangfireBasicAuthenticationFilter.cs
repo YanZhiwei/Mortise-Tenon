@@ -48,11 +48,11 @@ public sealed class HangfireBasicAuthenticationFilter : IDashboardAuthorizationF
         // 检查是否需要跳过基本认证
         if (httpContext.Items.TryGetValue("SkipBasicAuth", out var skipAuth) && skipAuth is true)
         {
-            _logger.LogInformation("IP 验证已通过，跳过基本认证");
+            _logger.LogDebug("IP 验证已通过，跳过基本认证");
             return true;
         }
 
-        _logger.LogInformation("开始基本认证验证");
+        _logger.LogDebug("开始基本认证验证");
 
         var header = httpContext.Request.Headers["Authorization"].ToString();
 
@@ -98,6 +98,7 @@ public sealed class HangfireBasicAuthenticationFilter : IDashboardAuthorizationF
 
         // 验证通过，重置失败次数
         _loginAttemptTracker.ResetAttempts(username);
+        _logger.LogDebug("认证成功: {Username}", username);
         return true;
     }
 
