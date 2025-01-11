@@ -1,96 +1,164 @@
 # Tenon.AspNetCore.OpenApi.Extensions
 
-这是一个基于 Scalar UI 的 OpenAPI 文档扩展库，提供了美观、现代的 API 文档界面。
+Scalar UI OpenAPI 扩展包，提供了更美观的 API 文档界面和更灵活的配置选项。
 
-## 特性
+## 功能特性
 
-- 基于 Scalar UI 的现代化界面
-- 支持 OAuth2 认证
-- 支持自定义主题
-- 完整的中文注释
-- 简单易用的配置选项
+- 集成 Scalar UI 作为 OpenAPI 文档界面
+- 支持 JWT Bearer 认证
+- 支持 OAuth2 认证配置
+- 支持数组参数的逗号分隔格式
+- 提供完整的 XML 文档注释
+- 环境感知配置
+- 主题定制支持
 
-## 依赖项
+## 示例项目
 
-- Scalar.AspNetCore (1.2.74)
-- Microsoft.AspNetCore.Authentication.JwtBearer (9.0.0)
+完整的使用示例请参考 [OpenApiSample](../../samples/OpenApiSample/README.md) 项目，其中包含：
+- JWT Bearer 认证示例
+- OAuth2 配置示例
+- 数组参数处理示例
+- 主题定制示例
 
-## 安装
+## 快速开始
 
+1. 安装 NuGet 包：
 ```bash
 dotnet add package Tenon.AspNetCore.OpenApi.Extensions
 ```
 
-## 使用方法
-
-1. 在 `Program.cs` 中注册服务：
-
+2. 注册服务：
 ```csharp
 // 添加 OpenAPI 服务
-builder.Services.AddTenonOpenApi(options =>
-{
-    options.Title = "我的 API";
-    options.Version = "v1";
-    options.Description = "API 描述";
-    
-    // 配置 OAuth2（可选）
-    options.OAuth2 = new OAuth2Options
-    {
-        Authority = "https://auth-server",
-        ClientId = "client_id",
-        Scopes = new List<string> { "api1" }
-    };
-    
-    // 配置主题（可选）
-    options.Theme = new ScalarThemeOptions
-    {
-        DarkMode = true,
-        Colors = new Dictionary<string, string>
-        {
-            { "primary", "#1976d2" }
-        }
-    };
-});
+builder.Services.AddScalarOpenApi(builder.Configuration.GetSection("ScalarUI"));
 
-// 配置中间件（注意：必须在 UseRouting 之后）
-app.UseRouting();
-app.UseTenonOpenApi();
+// 使用 OpenAPI 中间件（仅在开发环境）
+if (app.Environment.IsDevelopment())
+{
+    app.UseScalarOpenApi();
+}
 ```
 
-## 配置选项
+## 配置说明
 
-### ScalarOptions
+### appsettings.json 配置示例
 
-| 属性 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| Title | string | "API Documentation" | API 文档标题 |
-| Version | string | "v1" | API 版本 |
-| Description | string | "" | API 描述 |
-| RoutePrefix | string | "api-docs" | 路由前缀 |
-| EnableAuthorization | bool | true | 是否启用授权 |
-| OAuth2 | OAuth2Options | null | OAuth2 配置 |
-| Theme | ScalarThemeOptions | new() | 主题配置 |
+```json
+{
+  "ScalarUI": {
+    "Title": "API 文档",
+    "Version": "v1",
+    "Description": "API 接口文档",
+    "OAuth2": {
+      "Authority": "https://auth-server",
+      "ClientId": "api_client",
+      "Scopes": [ "api1" ]
+    },
+    "Theme": {
+      "DarkMode": true,
+      "Colors": {
+        "primary": "#1976d2",
+        "secondary": "#424242",
+        "success": "#2e7d32",
+        "error": "#d32f2f",
+        "warning": "#ed6c02",
+        "info": "#0288d1"
+      }
+    }
+  }
+}
+```
 
-### OAuth2Options
+### 配置方式
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| Authority | string | 授权服务器地址 |
-| ClientId | string | 客户端ID |
-| Scopes | List<string> | 授权范围 |
+1. 环境感知配置：
+```csharp
+if (app.Environment.IsDevelopment())
+{
+    app.UseScalarOpenApi();
+}
+```
 
-### ScalarThemeOptions
+2. 配置文件配置：
+```csharp
+builder.Services.AddScalarOpenApi(builder.Configuration.GetSection("ScalarUI"));
+```
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| DarkMode | bool | 是否启用暗色主题 |
-| Colors | Dictionary<string, string> | 主题颜色配置 |
+3. 代码配置：
+```csharp
+builder.Services.AddScalarOpenApi(options =>
+{
+    options.Title = "My API";
+    options.Version = "v1";
+    options.Theme.DarkMode = true;
+});
+```
 
-## 注意事项
+## 高级功能
 
-1. 必须在 `UseRouting` 之后调用 `UseTenonOpenApi`
-2. API 文档默认访问路径为 `/api-docs`
-3. OpenAPI JSON 文档路径为 `/api-docs/{documentName}.json`
+### 数组参数支持
+
+1. URL 查询参数：
+```csharp
+[HttpGet]
+public IEnumerable<string> Get(
+    [FromQuery][ModelBinder(typeof(CommaDelimitedArrayModelBinder))] 
+    int[] ids)
+{
+    // 支持 ?ids=1,2,3 格式
+}
+```
+
+2. 请求体数组：
+```csharp
+public class BatchRequest
+{
+    [Required]
+    public int[] Ids { get; set; } = Array.Empty<int>();
+}
+
+[HttpPost("batch")]
+public IActionResult Post([FromBody] BatchRequest request)
+{
+    // 支持标准 JSON 数组格式
+}
+```
+
+### 认证配置
+
+1. JWT Bearer 认证：
+```csharp
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+```
+
+2. OAuth2 认证：
+```json
+{
+  "OAuth2": {
+    "Authority": "https://auth-server",
+    "ClientId": "api_client",
+    "Scopes": [ "api1" ]
+  }
+}
+```
+
+## 最佳实践
+
+1. 环境配置：
+   - 开发环境启用 OpenAPI 文档
+   - 生产环境禁用 OpenAPI 文档
+   - 不同环境使用不同的认证配置
+
+2. 安全配置：
+   - 使用 HTTPS
+   - 配置适当的认证方式
+   - 启用 CORS 策略
+
+3. 文档优化：
+   - 添加完整的 XML 注释
+   - 提供清晰的示例
+   - 使用适当的响应类型
 
 ## 许可证
 

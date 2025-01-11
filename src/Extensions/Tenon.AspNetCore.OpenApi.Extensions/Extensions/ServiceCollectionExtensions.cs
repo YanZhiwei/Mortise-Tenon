@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -7,7 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 using Tenon.AspNetCore.OpenApi.Extensions.Configurations;
+using Tenon.AspNetCore.OpenApi.Extensions.ModelBinding;
 using Tenon.AspNetCore.OpenApi.Extensions.Transformers;
+using OAuth2Options = Scalar.AspNetCore.OAuth2Options;
 
 namespace Tenon.AspNetCore.OpenApi.Extensions;
 
@@ -29,15 +32,7 @@ public static class ServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-
-        services.AddEndpointsApiExplorer();
-        services.AddOpenApi(options =>
-        {
-            options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
-            options.AddDocumentTransformer<CommaDelimitedArrayDocumentTransformer>();
-        });
-
-        return services;
+        return AddScalarOpenApiCore(services);
     }
 
     /// <summary>
@@ -56,8 +51,27 @@ public static class ServiceCollectionExtensions
                 .ValidateOnStart();
         }
 
+        return AddScalarOpenApiCore(services);
+    }
+
+    /// <summary>
+    /// 添加 OpenAPI 核心服务
+    /// </summary>
+    /// <param name="services">服务集合</param>
+    /// <returns>服务集合</returns>
+    private static IServiceCollection AddScalarOpenApiCore(IServiceCollection services)
+    {
+        services.Configure<JsonOptions>(options =>
+        {
+            options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        });
+
         services.AddEndpointsApiExplorer();
-        services.AddOpenApi();
+        services.AddOpenApi(options =>
+        {
+            options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+            options.AddDocumentTransformer<CommaDelimitedArrayDocumentTransformer>();
+        });
 
         return services;
     }
@@ -78,15 +92,19 @@ public static class ServiceCollectionExtensions
             config.Title = options.Title;
             config.DarkMode = options.Theme.DarkMode;
 
+            // 配置认证选项
+            config.Authentication = new ScalarAuthenticationOptions
+            {
+                PreferredSecurityScheme = "Bearer"
+            };
+
+            // 如果配置了 OAuth2，则添加 OAuth2 选项
             if (options.OAuth2 != null)
             {
-                config.Authentication = new ScalarAuthenticationOptions
+                config.Authentication.OAuth2 = new OAuth2Options
                 {
-                    OAuth2 = new()
-                    {
-                        ClientId = options.OAuth2.ClientId,
-                        Scopes = options.OAuth2.Scopes
-                    }
+                    ClientId = options.OAuth2.ClientId,
+                    Scopes = options.OAuth2.Scopes
                 };
             }
         });
