@@ -175,6 +175,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tenon.Hangfire.Extensions",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HangfireSample", "..\samples\HangfireSample\HangfireSample.csproj", "{8EDE3775-C877-4DDF-9676-AC8EAACC963C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenApiSample", "..\samples\OpenApiSample\OpenApiSample.csproj", "{CBBB4FE1-A3D9-4FAE-B6C4-ED33B8A6CF25}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -469,6 +471,10 @@ Global
 		{8EDE3775-C877-4DDF-9676-AC8EAACC963C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8EDE3775-C877-4DDF-9676-AC8EAACC963C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8EDE3775-C877-4DDF-9676-AC8EAACC963C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CBBB4FE1-A3D9-4FAE-B6C4-ED33B8A6CF25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CBBB4FE1-A3D9-4FAE-B6C4-ED33B8A6CF25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CBBB4FE1-A3D9-4FAE-B6C4-ED33B8A6CF25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CBBB4FE1-A3D9-4FAE-B6C4-ED33B8A6CF25}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -530,6 +536,7 @@ Global
 		{A6C4DD93-A05C-41DC-A11B-1B93F4C9E5CF} = {76FD4AE7-DA80-4244-8A1A-784DD49F9894}
 		{8EEE2062-3EA1-41FA-8F24-7A9D913AADFF} = {8F47DBC9-9B92-4C83-B058-EA0EF909FAA9}
 		{8EDE3775-C877-4DDF-9676-AC8EAACC963C} = {76FD4AE7-DA80-4244-8A1A-784DD49F9894}
+		{CBBB4FE1-A3D9-4FAE-B6C4-ED33B8A6CF25} = {76FD4AE7-DA80-4244-8A1A-784DD49F9894}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BD20DE54-1131-41A3-9F1B-37B742A8FA09}
