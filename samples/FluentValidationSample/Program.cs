@@ -46,9 +46,6 @@ builder.Services.AddWebApiFluentValidation(
     builder.Configuration.GetSection("FluentValidation"),
     typeof(Program).Assembly);
 
-// 显式注册验证器
-builder.Services.AddScoped<IValidator<UserRegistrationRequest>, UserRegistrationValidator>();
-
 // Add Scalar UI
 builder.Services.AddScalarOpenApi(builder.Configuration.GetSection("ScalarUI"));
 

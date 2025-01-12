@@ -15,9 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\ValidationMessages.zh-CN.resx">
+    <EmbeddedResource Update="Resources\ValidationMessages.zh-CN.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LogicalName>FluentValidationSample.Resources.ValidationMessages.zh-CN.resources</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 
