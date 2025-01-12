@@ -6,7 +6,6 @@ Scalar UI OpenAPI 扩展包，提供了更美观的 API 文档界面和更灵活
 
 - 集成 Scalar UI 作为 OpenAPI 文档界面
 - 支持 JWT Bearer 认证
-- 支持 OAuth2 认证配置
 - 支持数组参数的逗号分隔格式
 - 提供完整的 XML 文档注释
 - 环境感知配置
@@ -16,7 +15,6 @@ Scalar UI OpenAPI 扩展包，提供了更美观的 API 文档界面和更灵活
 
 完整的使用示例请参考 [OpenApiSample](../../samples/OpenApiSample/README.md) 项目，其中包含：
 - JWT Bearer 认证示例
-- OAuth2 配置示例
 - 数组参数处理示例
 - 主题定制示例
 
@@ -49,11 +47,6 @@ if (app.Environment.IsDevelopment())
     "Title": "API 文档",
     "Version": "v1",
     "Description": "API 接口文档",
-    "OAuth2": {
-      "Authority": "https://auth-server",
-      "ClientId": "api_client",
-      "Scopes": [ "api1" ]
-    },
     "Theme": {
       "DarkMode": true,
       "Colors": {
@@ -130,17 +123,6 @@ public IActionResult Post([FromBody] BatchRequest request)
 ```csharp
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer();
-```
-
-2. OAuth2 认证：
-```json
-{
-  "OAuth2": {
-    "Authority": "https://auth-server",
-    "ClientId": "api_client",
-    "Scopes": [ "api1" ]
-  }
-}
 ```
 
 ## 最佳实践

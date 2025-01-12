@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 namespace OpenApiSample.Controllers;
 
 /// <summary>
-/// 认证控制器（仅用于开发测试）
+/// 认证控制器
 /// </summary>
 [ApiController]
 [Route("[controller]")]
@@ -25,10 +25,12 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// 获取测试用的访问令牌（仅用于开发测试）
+    /// 获取访问令牌
     /// </summary>
     /// <returns>访问令牌</returns>
     [HttpPost("token")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public IActionResult GetToken()
     {
         var jwtConfig = _configuration.GetSection("Jwt");
@@ -39,7 +41,10 @@ public class AuthController : ControllerBase
         {
             new Claim(JwtRegisteredClaimNames.Sub, "test_user"),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("scope", "weather_api")
+            new Claim("scope", "weather_api"),
+            new Claim("scope", "weather_api.read"),
+            new Claim("scope", "weather_api.write"),
+            new Claim("scope", "weather_api.admin")
         };
 
         var token = new JwtSecurityToken(
@@ -53,8 +58,8 @@ public class AuthController : ControllerBase
         return Ok(new
         {
             access_token = new JwtSecurityTokenHandler().WriteToken(token),
-            expires_in = 3600,
-            token_type = "Bearer"
+            token_type = "Bearer",
+            expires_in = 3600
         });
     }
 } 

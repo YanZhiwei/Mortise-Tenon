@@ -5,7 +5,6 @@ Tenon.AspNetCore.OpenApi.Extensions 的示例项目，展示了如何使用和�
 ## 项目特点
 
 - JWT Bearer 认证集成
-- OAuth2 认证示例
 - 数组参数处理
 - 主题定制
 - 完整的 XML 文档
@@ -32,20 +31,13 @@ http://localhost:5000/scalar/v1
 
 ### 认证配置
 
-使用 JWT Bearer 和 OAuth2 认证：
+使用 JWT Bearer 认证：
 ```json
 {
   "Jwt": {
     "Authority": "https://localhost:5001",
     "ClientId": "weather_api_client",
     "Audience": "weather_api"
-  },
-  "ScalarUI": {
-    "OAuth2": {
-      "Authority": "https://localhost:5001",
-      "ClientId": "weather_api_client",
-      "Scopes": [ "weather_api" ]
-    }
   }
 }
 ```

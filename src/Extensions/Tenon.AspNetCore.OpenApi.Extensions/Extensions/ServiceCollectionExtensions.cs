@@ -10,7 +10,6 @@ using Scalar.AspNetCore;
 using Tenon.AspNetCore.OpenApi.Extensions.Configurations;
 using Tenon.AspNetCore.OpenApi.Extensions.ModelBinding;
 using Tenon.AspNetCore.OpenApi.Extensions.Transformers;
-using OAuth2Options = Scalar.AspNetCore.OAuth2Options;
 
 namespace Tenon.AspNetCore.OpenApi.Extensions;
 
@@ -91,22 +90,6 @@ public static class ServiceCollectionExtensions
         {
             config.Title = options.Title;
             config.DarkMode = options.Theme.DarkMode;
-
-            // 配置认证选项
-            config.Authentication = new ScalarAuthenticationOptions
-            {
-                PreferredSecurityScheme = "Bearer"
-            };
-
-            // 如果配置了 OAuth2，则添加 OAuth2 选项
-            if (options.OAuth2 != null)
-            {
-                config.Authentication.OAuth2 = new OAuth2Options
-                {
-                    ClientId = options.OAuth2.ClientId,
-                    Scopes = options.OAuth2.Scopes
-                };
-            }
         });
 
         return app;

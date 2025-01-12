@@ -29,11 +29,6 @@ public class ScalarUIOptions : IValidatableObject
     public string Description { get; set; } = string.Empty;
 
     /// <summary>
-    /// OAuth2 配置
-    /// </summary>
-    public OAuth2Options? OAuth2 { get; set; }
-
-    /// <summary>
     /// 主题配置
     /// </summary>
     [Required(ErrorMessage = "主题配置不能为空")]
@@ -46,72 +41,7 @@ public class ScalarUIOptions : IValidatableObject
     /// <returns>验证结果</returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        // 如果启用了 OAuth2，则必须提供相关配置
-        if (OAuth2 != null)
-        {
-            if (string.IsNullOrEmpty(OAuth2.Authority))
-            {
-                yield return new ValidationResult(
-                    "启用 OAuth2 时，Authority 不能为空",
-                    new[] { nameof(OAuth2.Authority) }
-                );
-            }
-
-            if (string.IsNullOrEmpty(OAuth2.ClientId))
-            {
-                yield return new ValidationResult(
-                    "启用 OAuth2 时，ClientId 不能为空",
-                    new[] { nameof(OAuth2.ClientId) }
-                );
-            }
-
-            if (OAuth2.Scopes == null || !OAuth2.Scopes.Any())
-            {
-                yield return new ValidationResult(
-                    "启用 OAuth2 时，至少需要一个 Scope",
-                    new[] { nameof(OAuth2.Scopes) }
-                );
-            }
-        }
-    }
-}
-
-/// <summary>
-/// OAuth2 配置选项
-/// </summary>
-public class OAuth2Options : IValidatableObject
-{
-    /// <summary>
-    /// 授权服务器地址
-    /// </summary>
-    [Url(ErrorMessage = "授权服务器地址必须是有效的URL")]
-    public string Authority { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 客户端ID
-    /// </summary>
-    [Required(ErrorMessage = "客户端ID不能为空")]
-    public string ClientId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 授权范围
-    /// </summary>
-    public List<string> Scopes { get; set; } = new();
-
-    /// <summary>
-    /// 验证配置
-    /// </summary>
-    /// <param name="validationContext">验证上下文</param>
-    /// <returns>验证结果</returns>
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
-        if (Scopes.Any(scope => string.IsNullOrWhiteSpace(scope)))
-        {
-            yield return new ValidationResult(
-                "Scope 不能为空",
-                new[] { nameof(Scopes) }
-            );
-        }
+        yield break;
     }
 }
 
