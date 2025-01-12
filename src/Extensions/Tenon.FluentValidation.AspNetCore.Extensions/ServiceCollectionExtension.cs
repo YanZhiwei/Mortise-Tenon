@@ -112,20 +112,17 @@ public static class ServiceCollectionExtension
             });
         }
 
-        // 启用本地化支持
-        if (options.EnableLocalization)
-        {
-            // 自动注册本地化验证拦截器
-            if (!options.InterceptorTypes.Contains(typeof(LocalizationValidatorInterceptor)))
-            {
-                options.InterceptorTypes.Add(typeof(LocalizationValidatorInterceptor));
-            }
-        }
-
-        // 注册验证拦截器
+        // 注册其他验证拦截器
         foreach (var interceptorType in options.InterceptorTypes)
         {
             services.AddScoped(typeof(IValidatorInterceptor), interceptorType);
+        }
+
+        // 启用本地化支持时，最后注册 LocalizationValidatorInterceptor
+        // 这样确保它是最后一个被调用的拦截器
+        if (options.EnableLocalization)
+        {
+            services.AddScoped<IValidatorInterceptor, LocalizationValidatorInterceptor>();
         }
 
         return services;

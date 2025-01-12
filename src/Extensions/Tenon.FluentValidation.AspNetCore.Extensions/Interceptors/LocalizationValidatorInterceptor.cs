@@ -30,7 +30,6 @@ public class LocalizationValidatorInterceptor : IValidatorInterceptor
     /// <returns>验证上下文</returns>
     public IValidationContext BeforeAspNetValidation(ActionContext actionContext, IValidationContext validationContext)
     {
-        // 在验证之前，可以修改验证上下文
         return validationContext;
     }
 
@@ -49,7 +48,7 @@ public class LocalizationValidatorInterceptor : IValidatorInterceptor
             // 获取验证消息的本地化器
             var validationType = validationContext.InstanceToValidate.GetType();
             var resourceType = Type.GetType($"{validationType.Namespace}.Resources.ValidationMessages, {validationType.Assembly.GetName().Name}");
-
+            
             // 如果找不到资源类型，则使用默认的本地化器
             var localizer = resourceType != null
                 ? _localizerFactory.Create(resourceType)
@@ -59,10 +58,22 @@ public class LocalizationValidatorInterceptor : IValidatorInterceptor
             var errors = result.Errors.Select(error =>
             {
                 // 尝试获取本地化消息
-                var parameters = error.FormattedMessagePlaceholderValues as Dictionary<string, object>;
-                var args = parameters?.Values.ToArray() ?? Array.Empty<object>();
-                var localizedString = localizer[error.ErrorMessage, args];
+                var localizedString = localizer[error.ErrorMessage];
                 var localizedMessage = localizedString.ResourceNotFound ? error.ErrorMessage : localizedString.Value;
+
+                // 如果有占位符参数，进行格式化
+                if (error.FormattedMessagePlaceholderValues != null)
+                {
+                    var args = error.FormattedMessagePlaceholderValues
+                        .Where(x => x.Key != "PropertyName" && x.Key != "PropertyValue")
+                        .Select(x => x.Value)
+                        .ToArray();
+                    
+                    if (args.Length > 0)
+                    {
+                        localizedMessage = string.Format(localizedMessage, args);
+                    }
+                }
 
                 return new ValidationFailure(error.PropertyName, localizedMessage)
                 {

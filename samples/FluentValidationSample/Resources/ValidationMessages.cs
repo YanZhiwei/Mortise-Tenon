@@ -5,4 +5,7 @@ namespace FluentValidationSample.Resources;
 /// </summary>
 public class ValidationMessages
 {
+    private ValidationMessages()
+    {
+    }
 } 

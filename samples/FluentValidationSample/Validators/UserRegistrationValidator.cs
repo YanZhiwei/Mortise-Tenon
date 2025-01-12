@@ -15,34 +15,34 @@ public class UserRegistrationValidator : AbstractValidator<UserRegistrationReque
     {
         RuleFor(x => x.Username)
             .Required()
-            .WithMessage(x => localizer["Username_Required"].Value)
+            .WithMessage(localizer["Username_Required"])
             .Length(3, 20)
-            .WithMessage(x => localizer["Username_Length", 3, 20].Value);
+            .WithMessage(localizer["Username_Length", 3, 20]);
 
         RuleFor(x => x.Email)
             .Required()
-            .WithMessage(x => localizer["Email_Required"].Value)
+            .WithMessage(localizer["Email_Required"])
             .EmailAddress()
-            .WithMessage(x => localizer["Email_Invalid"].Value);
+            .WithMessage(localizer["Email_Invalid"]);
 
         RuleFor(x => x.Password)
             .Required()
-            .WithMessage(x => localizer["Password_Required"].Value)
+            .WithMessage(localizer["Password_Required"])
             .MinimumLength(6)
-            .WithMessage(x => localizer["Password_Length", 6].Value)
+            .WithMessage(localizer["Password_Length", 6])
             .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{6,}$")
-            .WithMessage(x => localizer["Password_Complexity"].Value);
+            .WithMessage(localizer["Password_Complexity"]);
 
         RuleFor(x => x.ConfirmPassword)
             .Required()
-            .WithMessage(x => localizer["ConfirmPassword_Required"].Value)
+            .WithMessage(localizer["ConfirmPassword_Required"])
             .Equal(x => x.Password)
-            .WithMessage(x => localizer["ConfirmPassword_NotMatch"].Value);
+            .WithMessage(localizer["ConfirmPassword_NotMatch"]);
 
         RuleFor(x => x.Age)
             .Required()
-            .WithMessage(x => localizer["Age_Required"].Value)
+            .WithMessage(localizer["Age_Required"])
             .GreaterThanOrEqualTo(18)
-            .WithMessage(x => localizer["Age_Range", 18].Value);
+            .WithMessage(localizer["Age_Range", 18]);
     }
 } 
