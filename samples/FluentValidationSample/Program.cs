@@ -17,16 +17,18 @@ builder.Services.AddControllers();
 // Add localization
 builder.Services.AddLocalization();
 
-// Configure supported cultures
+// Configure supported cultures from configuration
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
-    var supportedCultures = new[]
-    {
-        new CultureInfo("zh-CN"),
-        new CultureInfo("en-US")
-    };
+    var localizationConfig = builder.Configuration.GetSection("Localization").Get<LocalizationConfig>();
+    
+    var supportedCultures = localizationConfig?.SupportedCultures?
+        .Select(c => new CultureInfo(c))
+        .ToArray() ?? new[] { new CultureInfo("zh-CN") };
 
-    options.DefaultRequestCulture = new RequestCulture("zh-CN");
+    var defaultCulture = localizationConfig?.DefaultCulture ?? "zh-CN";
+
+    options.DefaultRequestCulture = new RequestCulture(defaultCulture);
     options.SupportedCultures = supportedCultures;
     options.SupportedUICultures = supportedCultures;
     
@@ -39,39 +41,16 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     };
 });
 
-// Add FluentValidation with localization enabled
-builder.Services.AddWebApiFluentValidation(options =>
-{
-    options.EnableLocalization = true;
-    options.DisableDefaultModelValidation = false;
-}, typeof(Program).Assembly);
-
-// Configure API behavior options
-builder.Services.Configure<ApiBehaviorOptions>(options =>
-{
-    options.SuppressModelStateInvalidFilter = false;
-    options.InvalidModelStateResponseFactory = context =>
-    {
-        var problemDetails = new ValidationProblemDetails(context.ModelState)
-        {
-            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-            Title = "One or more validation errors occurred.",
-            Status = StatusCodes.Status400BadRequest,
-            Instance = context.HttpContext.Request.Path,
-        };
-
-        return new BadRequestObjectResult(problemDetails);
-    };
-});
+// Add FluentValidation
+builder.Services.AddWebApiFluentValidation(
+    builder.Configuration.GetSection("FluentValidation"),
+    typeof(Program).Assembly);
 
 // 显式注册验证器
 builder.Services.AddScoped<IValidator<UserRegistrationRequest>, UserRegistrationValidator>();
 
 // Add Scalar UI
-builder.Services.AddScalarOpenApi(options =>
-{
-    builder.Configuration.GetSection("ScalarUI").Bind(options);
-});
+builder.Services.AddScalarOpenApi(builder.Configuration.GetSection("ScalarUI"));
 
 // 注册 UserService
 builder.Services.AddScoped<IUserService, UserService>();
@@ -87,3 +66,19 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+/// <summary>
+/// 本地化配置
+/// </summary>
+public class LocalizationConfig
+{
+    /// <summary>
+    /// 默认文化信息
+    /// </summary>
+    public string DefaultCulture { get; set; } = "zh-CN";
+
+    /// <summary>
+    /// 支持的文化信息列表
+    /// </summary>
+    public string[] SupportedCultures { get; set; } = { "zh-CN" };
+}

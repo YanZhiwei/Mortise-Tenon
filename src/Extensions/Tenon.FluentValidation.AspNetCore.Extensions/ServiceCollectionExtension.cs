@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Tenon.FluentValidation.AspNetCore.Extensions.Interceptors;
 
 namespace Tenon.FluentValidation.AspNetCore.Extensions;
 
@@ -26,17 +25,6 @@ public class FluentValidationOptions
     /// </summary>
     [Required(ErrorMessage = "必须指定验证器生命周期")]
     public ServiceLifetime ValidatorLifetime { get; set; } = ServiceLifetime.Scoped;
-
-    /// <summary>
-    /// 是否启用验证消息本地化
-    /// </summary>
-    [Required(ErrorMessage = "必须指定是否启用本地化")]
-    public bool EnableLocalization { get; set; } = false;
-
-    /// <summary>
-    /// 验证拦截器类型集合
-    /// </summary>
-    public List<Type> InterceptorTypes { get; set; } = new();
 }
 
 /// <summary>
@@ -110,19 +98,6 @@ public static class ServiceCollectionExtension
             {
                 opt.SuppressModelStateInvalidFilter = true;
             });
-        }
-
-        // 注册其他验证拦截器
-        foreach (var interceptorType in options.InterceptorTypes)
-        {
-            services.AddScoped(typeof(IValidatorInterceptor), interceptorType);
-        }
-
-        // 启用本地化支持时，最后注册 LocalizationValidatorInterceptor
-        // 这样确保它是最后一个被调用的拦截器
-        if (options.EnableLocalization)
-        {
-            services.AddScoped<IValidatorInterceptor, LocalizationValidatorInterceptor>();
         }
 
         return services;
