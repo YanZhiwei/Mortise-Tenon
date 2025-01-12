@@ -177,6 +177,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HangfireSample", "..\sample
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenApiSample", "..\samples\OpenApiSample\OpenApiSample.csproj", "{CBBB4FE1-A3D9-4FAE-B6C4-ED33B8A6CF25}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tenon.EntityFrameworkCore.Extensions.Tests", "..\test\Tenon.EntityFrameworkCore.Extensions.Tests\Tenon.EntityFrameworkCore.Extensions.Tests.csproj", "{E6F0F01D-EF84-4EB9-AA20-F5E71764B78F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -475,6 +477,10 @@ Global
 		{CBBB4FE1-A3D9-4FAE-B6C4-ED33B8A6CF25}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CBBB4FE1-A3D9-4FAE-B6C4-ED33B8A6CF25}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CBBB4FE1-A3D9-4FAE-B6C4-ED33B8A6CF25}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E6F0F01D-EF84-4EB9-AA20-F5E71764B78F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6F0F01D-EF84-4EB9-AA20-F5E71764B78F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6F0F01D-EF84-4EB9-AA20-F5E71764B78F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6F0F01D-EF84-4EB9-AA20-F5E71764B78F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -537,6 +543,7 @@ Global
 		{8EEE2062-3EA1-41FA-8F24-7A9D913AADFF} = {8F47DBC9-9B92-4C83-B058-EA0EF909FAA9}
 		{8EDE3775-C877-4DDF-9676-AC8EAACC963C} = {76FD4AE7-DA80-4244-8A1A-784DD49F9894}
 		{CBBB4FE1-A3D9-4FAE-B6C4-ED33B8A6CF25} = {76FD4AE7-DA80-4244-8A1A-784DD49F9894}
+		{E6F0F01D-EF84-4EB9-AA20-F5E71764B78F} = {E105A163-9660-4A89-8CA9-C242762B8613}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BD20DE54-1131-41A3-9F1B-37B742A8FA09}
