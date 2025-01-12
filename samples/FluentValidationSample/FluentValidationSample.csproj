@@ -11,6 +11,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Extensions\Tenon.FluentValidation.AspNetCore.Extensions\Tenon.FluentValidation.AspNetCore.Extensions.csproj" />
     <ProjectReference Include="..\..\src\Extensions\Tenon.AspNetCore.OpenApi.Extensions\Tenon.AspNetCore.OpenApi.Extensions.csproj" />
+    <ProjectReference Include="..\..\src\Tenon.AspNetCore\Tenon.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Extensions\Tenon.FluentValidation.Extensions\Tenon.FluentValidation.Extensions.csproj" />
   </ItemGroup>
 
 </Project>

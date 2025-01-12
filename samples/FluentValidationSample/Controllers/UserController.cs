@@ -1,6 +1,7 @@
-using FluentValidation;
 using FluentValidationSample.Models;
+using FluentValidationSample.Services;
 using Microsoft.AspNetCore.Mvc;
+using Tenon.AspNetCore.Controllers;
 
 namespace FluentValidationSample.Controllers;
 
@@ -9,53 +10,37 @@ namespace FluentValidationSample.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class UserController : ControllerBase
+public class UserController : AbstractController
 {
-    private readonly IValidator<UserRegistrationRequest> _validator;
+    private readonly IUserService _userService;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="validator">用户注册请求验证器</param>
-    public UserController(IValidator<UserRegistrationRequest> validator)
+    /// <param name="userService">用户服务</param>
+    public UserController(IUserService userService)
     {
-        _validator = validator;
+        _userService = userService;
     }
 
     /// <summary>
     /// 用户注册
     /// </summary>
     /// <param name="request">注册请求</param>
+    /// <param name="cancellationToken">取消令牌</param>
     /// <returns>注册结果</returns>
     /// <response code="200">注册成功</response>
     /// <response code="400">请求参数验证失败</response>
+    /// <response code="500">服务器内部错误</response>
     [HttpPost("register")]
-    [ProducesResponseType(typeof(ApiResponse<UserRegistrationRequest>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ValidationErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register([FromBody] UserRegistrationRequest request)
+    [ProducesResponseType(typeof(UserRegistrationResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<UserRegistrationResultDto>> Register(
+        [FromBody] UserRegistrationRequest request,
+        CancellationToken cancellationToken)
     {
-        // 显式调用验证器
-        var validationResult = await _validator.ValidateAsync(request);
-        if (!validationResult.IsValid)
-        {
-            return BadRequest(new ValidationErrorResponse
-            {
-                Success = false,
-                Message = "验证失败",
-                Errors = validationResult.Errors.Select(error => new ValidationError
-                {
-                    PropertyName = error.PropertyName,
-                    ErrorMessage = error.ErrorMessage
-                })
-            });
-        }
-
-        // 如果验证通过，返回成功
-        return Ok(new ApiResponse<UserRegistrationRequest>
-        {
-            Success = true,
-            Message = "注册成功",
-            Data = request
-        });
+        var result = await _userService.RegisterAsync(request, cancellationToken);
+        return Result(result);
     }
-} 
+}
