@@ -40,8 +40,14 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 {
     DefaultRequestCulture = new RequestCulture(defaultCulture),
     SupportedCultures = supportedCultures,
-    SupportedUICultures = supportedCultures
+    SupportedUICultures = supportedCultures,
+    FallBackToParentCultures = true,
+    FallBackToParentUICultures = true
 });
+
+// 设置当前线程的文化信息
+CultureInfo.CurrentCulture = new CultureInfo(defaultCulture);
+CultureInfo.CurrentUICulture = new CultureInfo(defaultCulture);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) app.UseScalarOpenApi();

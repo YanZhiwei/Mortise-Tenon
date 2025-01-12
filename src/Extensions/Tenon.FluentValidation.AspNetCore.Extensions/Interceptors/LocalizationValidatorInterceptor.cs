@@ -11,15 +11,15 @@ namespace Tenon.FluentValidation.AspNetCore.Extensions.Interceptors;
 /// </summary>
 public class LocalizationValidatorInterceptor : IValidatorInterceptor
 {
-    private readonly IStringLocalizer _localizer;
+    private readonly IStringLocalizerFactory _localizerFactory;
 
     /// <summary>
     /// 初始化本地化验证拦截器
     /// </summary>
-    /// <param name="localizer">字符串本地化器</param>
-    public LocalizationValidatorInterceptor(IStringLocalizer<LocalizationValidatorInterceptor> localizer)
+    /// <param name="localizerFactory">字符串本地化器工厂</param>
+    public LocalizationValidatorInterceptor(IStringLocalizerFactory localizerFactory)
     {
-        _localizer = localizer;
+        _localizerFactory = localizerFactory;
     }
 
     /// <summary>
@@ -44,12 +44,23 @@ public class LocalizationValidatorInterceptor : IValidatorInterceptor
     public ValidationResult AfterAspNetValidation(ActionContext actionContext, IValidationContext validationContext,
         ValidationResult result)
     {
-        // 在验证之后，可以修改验证结果
         if (!result.IsValid)
         {
+            // 获取验证消息的本地化器
+            var validationType = validationContext.InstanceToValidate.GetType();
+            var resourceType = Type.GetType($"{validationType.Namespace}.Resources.ValidationMessages, {validationType.Assembly.FullName}");
+            var localizer = _localizerFactory.Create(resourceType ?? typeof(LocalizationValidatorInterceptor));
+
             // 本地化错误消息
-            var errors = result.Errors.Select(error => new ValidationFailure(error.PropertyName,
-                _localizer[error.ErrorMessage].Value));
+            var errors = result.Errors.Select(error =>
+            {
+                var localizedMessage = localizer[error.ErrorMessage];
+                return new ValidationFailure(error.PropertyName, localizedMessage)
+                {
+                    ErrorCode = error.ErrorCode,
+                    FormattedMessagePlaceholderValues = error.FormattedMessagePlaceholderValues
+                };
+            });
 
             result = new ValidationResult(errors);
         }
