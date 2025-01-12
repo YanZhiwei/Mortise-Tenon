@@ -57,8 +57,8 @@ public class UserController : AbstractController
         var validationResult = await _validator.ValidateAsync(request, cancellationToken);
         
         // 测试本地化器是否正常工作
-        var testMessage = _localizer["Username_Required"];
-        System.Diagnostics.Debug.WriteLine($"Test localization - ResourceNotFound: {testMessage.ResourceNotFound}, Value: {testMessage.Value}");
+        var testMessage = ValidationMessages.GetString("Username_Required");
+        System.Diagnostics.Debug.WriteLine($"Test localization - Message: {testMessage}");
         
         if (!validationResult.IsValid)
             return validationResult.ToLocalizedValidationProblemDetails(_localizer);

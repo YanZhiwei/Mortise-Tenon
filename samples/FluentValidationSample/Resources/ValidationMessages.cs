@@ -1,3 +1,5 @@
+using System.Resources;
+
 namespace FluentValidationSample.Resources;
 
 /// <summary>
@@ -5,7 +7,16 @@ namespace FluentValidationSample.Resources;
 /// </summary>
 public class ValidationMessages
 {
+    private static readonly ResourceManager ResourceManager = new(
+        "FluentValidationSample.Resources.ValidationMessages",
+        typeof(ValidationMessages).Assembly);
+
     private ValidationMessages()
     {
+    }
+
+    public static string GetString(string name)
+    {
+        return ResourceManager.GetString(name) ?? name;
     }
 } 

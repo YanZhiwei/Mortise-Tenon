@@ -6,20 +6,20 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>false</InvariantGlobalization>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Extensions\Tenon.AspNetCore.OpenApi.Extensions\Tenon.AspNetCore.OpenApi.Extensions.csproj" />
     <ProjectReference Include="..\..\src\Extensions\Tenon.FluentValidation.AspNetCore.Extensions\Tenon.FluentValidation.AspNetCore.Extensions.csproj" />
-    <ProjectReference Include="..\..\src\Extensions\Tenon.AspNetCore.OpenApi.Extensions\Tenon.AspNetCore.OpenApi.Extensions.csproj" />
     <ProjectReference Include="..\..\src\Tenon.AspNetCore\Tenon.AspNetCore.csproj" />
     <ProjectReference Include="..\..\src\Extensions\Tenon.FluentValidation.Extensions\Tenon.FluentValidation.Extensions.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\ValidationMessages.zh-CN.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LogicalName>FluentValidationSample.Resources.ValidationMessages.zh-CN.resources</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 

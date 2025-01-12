@@ -15,10 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // Add localization
-builder.Services.AddLocalization(options => 
-{
-    options.ResourcesPath = "Resources";
-});
+builder.Services.AddLocalization();
 
 // Configure supported cultures
 builder.Services.Configure<RequestLocalizationOptions>(options =>
