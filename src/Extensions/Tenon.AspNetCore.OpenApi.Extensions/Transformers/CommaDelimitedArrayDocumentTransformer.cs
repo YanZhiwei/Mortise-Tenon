@@ -10,13 +10,18 @@ public sealed class CommaDelimitedArrayDocumentTransformer : IOpenApiDocumentTra
     public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context,
         CancellationToken cancellationToken)
     {
-        var arraySchemas = document.Components.Schemas
-            .SelectMany(schema => schema.Value.Properties
-                .Where(property => property.Value.Type == "array"))
-            .ToList();
+        document.Components ??= new OpenApiComponents();
+        
+        if (document.Components.Schemas != null)
+        {
+            var arraySchemas = document.Components.Schemas
+                .SelectMany(schema => schema.Value.Properties
+                    .Where(property => property.Value.Type == "array"))
+                .ToList();
 
-        foreach (var property in arraySchemas)
-            property.Value.Description = AppendDescription(property.Value.Description, ArrayDescription);
+            foreach (var property in arraySchemas)
+                property.Value.Description = AppendDescription(property.Value.Description, ArrayDescription);
+        }
 
         return Task.CompletedTask;
     }

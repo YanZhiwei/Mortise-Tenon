@@ -46,6 +46,7 @@ public abstract class AbstractController : ControllerBase
         return Problem(serviceResult.ProblemDetails);
     }
 
+
     [NonAction]
     protected virtual ActionResult<T> Result<T>(ServiceResult<T> serviceResult)
     {
