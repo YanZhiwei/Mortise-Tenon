@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+            <xsd:complexType>
+                <xsd:choice maxOccurs="unbounded">
+                    <xsd:element name="data">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" />
+                            <xsd:attribute name="type" type="xsd:string" />
+                            <xsd:attribute name="mimetype" type="xsd:string" />
+                        </xsd:complexType>
+                    </xsd:element>
+                </xsd:choice>
+            </xsd:complexType>
+        </xsd:element>
+    </xsd:schema>
+    <!-- 通用验证消息 -->
+    <data name="Required" xml:space="preserve">
+        <value>{PropertyName} 是必填项</value>
+    </data>
+    <data name="Invalid" xml:space="preserve">
+        <value>{PropertyName} 格式不正确</value>
+    </data>
+    <data name="Length" xml:space="preserve">
+        <value>{PropertyName} 长度必须在 {MinLength} 到 {MaxLength} 个字符之间</value>
+    </data>
+    <data name="Range" xml:space="preserve">
+        <value>{PropertyName} 必须在 {From} 到 {To} 之间</value>
+    </data>
+    <data name="Equal" xml:space="preserve">
+        <value>{PropertyName} 必须等于 {ComparisonValue}</value>
+    </data>
+    
+    <!-- 用户注册相关验证消息 -->
+    <data name="Username_Required" xml:space="preserve">
+        <value>请输入用户名</value>
+    </data>
+    <data name="Username_Length" xml:space="preserve">
+        <value>用户名长度必须在 {MinLength} 到 {MaxLength} 个字符之间</value>
+    </data>
+    <data name="Email_Required" xml:space="preserve">
+        <value>请输入电子邮件地址</value>
+    </data>
+    <data name="Email_Invalid" xml:space="preserve">
+        <value>请输入有效的电子邮件地址</value>
+    </data>
+    <data name="Password_Required" xml:space="preserve">
+        <value>请输入密码</value>
+    </data>
+    <data name="Password_Length" xml:space="preserve">
+        <value>密码长度必须至少为 {MinLength} 个字符</value>
+    </data>
+    <data name="Password_Complexity" xml:space="preserve">
+        <value>密码必须包含至少一个大写字母、一个小写字母、一个数字和一个特殊字符</value>
+    </data>
+    <data name="ConfirmPassword_Required" xml:space="preserve">
+        <value>请输入确认密码</value>
+    </data>
+    <data name="ConfirmPassword_NotMatch" xml:space="preserve">
+        <value>两次输入的密码不一致</value>
+    </data>
+    <data name="Age_Required" xml:space="preserve">
+        <value>请输入年龄</value>
+    </data>
+    <data name="Age_Range" xml:space="preserve">
+        <value>年龄必须大于或等于 {ComparisonValue} 岁</value>
+    </data>
+</root> 

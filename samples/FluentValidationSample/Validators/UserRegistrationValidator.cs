@@ -1,5 +1,7 @@
 using FluentValidation;
 using FluentValidationSample.Models;
+using FluentValidationSample.Resources;
+using Microsoft.Extensions.Localization;
 using Tenon.FluentValidation.Extensions;
 
 namespace FluentValidationSample.Validators;
@@ -9,32 +11,38 @@ namespace FluentValidationSample.Validators;
 /// </summary>
 public class UserRegistrationValidator : AbstractValidator<UserRegistrationRequest>
 {
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    public UserRegistrationValidator()
+    public UserRegistrationValidator(IStringLocalizer<ValidationMessages> localizer)
     {
         RuleFor(x => x.Username)
             .Required()
-            .Length(3, 20).WithMessage("用户名长度必须在3-20个字符之间");
+            .WithMessage(localizer["Username_Required"])
+            .Length(3, 20)
+            .WithMessage(localizer["Username_Length"]);
 
         RuleFor(x => x.Email)
             .Required()
-            .EmailAddress().WithMessage("邮箱格式不正确");
+            .WithMessage(localizer["Email_Required"])
+            .EmailAddress()
+            .WithMessage(localizer["Email_Invalid"]);
 
         RuleFor(x => x.Password)
             .Required()
-            .MinimumLength(6).WithMessage("密码长度不能少于6个字符")
-            .Matches("[A-Z]").WithMessage("密码必须包含至少一个大写字母")
-            .Matches("[a-z]").WithMessage("密码必须包含至少一个小写字母")
-            .Matches("[0-9]").WithMessage("密码必须包含至少一个数字")
-            .Matches("[^a-zA-Z0-9]").WithMessage("密码必须包含至少一个特殊字符");
+            .WithMessage(localizer["Password_Required"])
+            .MinimumLength(6)
+            .WithMessage(localizer["Password_Length"])
+            .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{6,}$")
+            .WithMessage(localizer["Password_Complexity"]);
 
         RuleFor(x => x.ConfirmPassword)
             .Required()
-            .Equal(x => x.Password).WithMessage("两次输入的密码不一致");
+            .WithMessage(localizer["ConfirmPassword_Required"])
+            .Equal(x => x.Password)
+            .WithMessage(localizer["ConfirmPassword_NotMatch"]);
 
         RuleFor(x => x.Age)
-            .GreaterThanOrEqualTo(18).WithMessage("年龄必须大于或等于18岁");
+            .Required()
+            .WithMessage(localizer["Age_Required"])
+            .GreaterThanOrEqualTo(18)
+            .WithMessage(localizer["Age_Range"]);
     }
 } 

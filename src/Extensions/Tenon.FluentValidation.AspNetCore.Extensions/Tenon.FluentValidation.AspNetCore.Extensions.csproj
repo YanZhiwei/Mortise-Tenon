@@ -6,6 +6,10 @@
 	  <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Description>Tenon FluentValidation AspNetCore Extensions Library</Description>
+    <PackageTags>tenon;fluentvalidation;aspnetcore;validation</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -14,5 +18,14 @@
 	  <PackageReference Include="FluentValidation" Version="11.11.0" />
 	  <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
 	  <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Tenon.FluentValidation.Extensions\Tenon.FluentValidation.Extensions.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\*.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>%(Filename).Designer.cs</LastGenOutput>
+		</EmbeddedResource>
 	</ItemGroup>
 </Project>
