@@ -1,61 +1,46 @@
-using FluentValidationSample.Services;
-using FluentValidationSample.Validators;
-using Microsoft.AspNetCore.Localization;
 using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 using Tenon.AspNetCore.OpenApi.Extensions;
 using Tenon.FluentValidation.AspNetCore.Extensions;
+using Tenon.FluentValidation.AspNetCore.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
 
-// 获取 FluentValidation 配置
-var fluentValidationConfig = builder.Configuration.GetSection("FluentValidation");
-var localizationConfig = fluentValidationConfig.GetSection("Localization");
+// Add FluentValidation
+builder.Services.AddWebApiFluentValidation(builder.Configuration.GetSection("FluentValidation"));
 
-// 添加本地化支持
-builder.Services.AddLocalization(options => 
-    options.ResourcesPath = localizationConfig.GetValue<string>("ResourcesPath") ?? "Resources");
+// Add localization
+var localizationOptions = builder.Configuration.GetSection("FluentValidation:Localization").Get<LocalizationOptions>();
+builder.Services.AddLocalization(options => options.ResourcesPath = localizationOptions?.ResourcesPath ?? "Resources");
 
-// 添加 WebAPI FluentValidation 验证器
-builder.Services.AddWebApiFluentValidation(fluentValidationConfig, typeof(UserRegistrationValidator).Assembly);
-
-// 添加业务服务
-builder.Services.AddScoped<IUserService, UserService>();
-
-// 配置 Scalar OpenAPI
+// Add Scalar UI
 builder.Services.AddScalarOpenApi(builder.Configuration.GetSection("ScalarUI"));
 
 var app = builder.Build();
 
-// 配置本地化
-var defaultCulture = localizationConfig.GetValue<string>("DefaultCulture") ?? "zh-CN";
-var supportedCultureNames = localizationConfig.GetSection("SupportedCultures").Get<string[]>() 
-    ?? new[] { "zh-CN", "en-US" };
-var supportedCultures = supportedCultureNames.Select(x => new CultureInfo(x)).ToArray();
-
-app.UseRequestLocalization(new RequestLocalizationOptions
-{
-    DefaultRequestCulture = new RequestCulture(defaultCulture),
-    SupportedCultures = supportedCultures,
-    SupportedUICultures = supportedCultures,
-    FallBackToParentCultures = true,
-    FallBackToParentUICultures = true
-});
-
-// 设置当前线程的文化信息
-CultureInfo.CurrentCulture = new CultureInfo(defaultCulture);
-CultureInfo.CurrentUICulture = new CultureInfo(defaultCulture);
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) app.UseScalarOpenApi();
 
+// Configure localization
+if (localizationOptions != null)
+{
+    var supportedCultures = (localizationOptions.SupportedCultures ?? new[] { "zh-CN" })
+        .Select(c => new CultureInfo(c))
+        .ToList();
+
+    app.UseRequestLocalization(new RequestLocalizationOptions
+    {
+        DefaultRequestCulture = new RequestCulture(localizationOptions.DefaultCulture ?? "zh-CN"),
+        SupportedCultures = supportedCultures,
+        SupportedUICultures = supportedCultures
+    });
+}
+
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

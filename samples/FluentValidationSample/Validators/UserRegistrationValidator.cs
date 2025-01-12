@@ -15,34 +15,34 @@ public class UserRegistrationValidator : AbstractValidator<UserRegistrationReque
     {
         RuleFor(x => x.Username)
             .Required()
-            .WithMessage(localizer["Username_Required"])
+            .WithMessage(x => localizer["Username_Required"].Value)
             .Length(3, 20)
-            .WithMessage(localizer["Username_Length"]);
+            .WithMessage(x => localizer["Username_Length", 3, 20].Value);
 
         RuleFor(x => x.Email)
             .Required()
-            .WithMessage(localizer["Email_Required"])
+            .WithMessage(x => localizer["Email_Required"].Value)
             .EmailAddress()
-            .WithMessage(localizer["Email_Invalid"]);
+            .WithMessage(x => localizer["Email_Invalid"].Value);
 
         RuleFor(x => x.Password)
             .Required()
-            .WithMessage(localizer["Password_Required"])
+            .WithMessage(x => localizer["Password_Required"].Value)
             .MinimumLength(6)
-            .WithMessage(localizer["Password_Length"])
+            .WithMessage(x => localizer["Password_Length", 6].Value)
             .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{6,}$")
-            .WithMessage(localizer["Password_Complexity"]);
+            .WithMessage(x => localizer["Password_Complexity"].Value);
 
         RuleFor(x => x.ConfirmPassword)
             .Required()
-            .WithMessage(localizer["ConfirmPassword_Required"])
+            .WithMessage(x => localizer["ConfirmPassword_Required"].Value)
             .Equal(x => x.Password)
-            .WithMessage(localizer["ConfirmPassword_NotMatch"]);
+            .WithMessage(x => localizer["ConfirmPassword_NotMatch"].Value);
 
         RuleFor(x => x.Age)
             .Required()
-            .WithMessage(localizer["Age_Required"])
+            .WithMessage(x => localizer["Age_Required"].Value)
             .GreaterThanOrEqualTo(18)
-            .WithMessage(localizer["Age_Range"]);
+            .WithMessage(x => localizer["Age_Range", 18].Value);
     }
 } 

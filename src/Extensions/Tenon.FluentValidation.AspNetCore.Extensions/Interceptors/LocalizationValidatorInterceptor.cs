@@ -48,21 +48,34 @@ public class LocalizationValidatorInterceptor : IValidatorInterceptor
         {
             // 获取验证消息的本地化器
             var validationType = validationContext.InstanceToValidate.GetType();
-            var resourceType = Type.GetType($"{validationType.Namespace}.Resources.ValidationMessages, {validationType.Assembly.FullName}");
-            var localizer = _localizerFactory.Create(resourceType ?? typeof(LocalizationValidatorInterceptor));
+            var resourceType = Type.GetType($"{validationType.Namespace}.Resources.ValidationMessages, {validationType.Assembly.GetName().Name}");
+
+            // 如果找不到资源类型，则使用默认的本地化器
+            var localizer = resourceType != null
+                ? _localizerFactory.Create(resourceType)
+                : _localizerFactory.Create(typeof(LocalizationValidatorInterceptor));
 
             // 本地化错误消息
             var errors = result.Errors.Select(error =>
             {
-                var localizedMessage = localizer[error.ErrorMessage];
+                // 尝试获取本地化消息
+                var parameters = error.FormattedMessagePlaceholderValues as Dictionary<string, object>;
+                var args = parameters?.Values.ToArray() ?? Array.Empty<object>();
+                var localizedString = localizer[error.ErrorMessage, args];
+                var localizedMessage = localizedString.ResourceNotFound ? error.ErrorMessage : localizedString.Value;
+
                 return new ValidationFailure(error.PropertyName, localizedMessage)
                 {
                     ErrorCode = error.ErrorCode,
-                    FormattedMessagePlaceholderValues = error.FormattedMessagePlaceholderValues
+                    FormattedMessagePlaceholderValues = error.FormattedMessagePlaceholderValues,
+                    PropertyName = error.PropertyName,
+                    Severity = error.Severity,
+                    AttemptedValue = error.AttemptedValue,
+                    CustomState = error.CustomState
                 };
-            });
+            }).ToList();
 
-            result = new ValidationResult(errors);
+            return new ValidationResult(errors);
         }
 
         return result;
