@@ -35,8 +35,21 @@ builder.Services.AddAuthentication(options =>
 // 添加授权
 builder.Services.AddAuthorization(options =>
 {
+    // 基础 API 访问策略
     options.AddPolicy("WeatherApiScope", policy =>
         policy.RequireClaim("scope", "weather_api"));
+
+    // 读取权限策略
+    options.AddPolicy("WeatherApiReadScope", policy =>
+        policy.RequireClaim("scope", "weather_api.read"));
+
+    // 写入权限策略
+    options.AddPolicy("WeatherApiWriteScope", policy =>
+        policy.RequireClaim("scope", "weather_api.write"));
+
+    // 管理员权限策略
+    options.AddPolicy("WeatherApiAdminScope", policy =>
+        policy.RequireClaim("scope", "weather_api.admin"));
 });
 
 // 添加控制器
