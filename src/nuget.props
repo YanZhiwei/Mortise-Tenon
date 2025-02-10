@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageIcon>logo.png</PackageIcon>
@@ -10,6 +10,7 @@
 		<PackageTags>ddd,framework,infra,helper</PackageTags>
 		<RepositoryUrl>https://github.com/YanZhiwei/Tenon</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/YanZhiwei/Tenon</PackageProjectUrl>
+		<PackageReadmeFile Condition="Exists('$(MSBuildProjectDirectory)\README.md')">README.md</PackageReadmeFile>
 	</PropertyGroup>
 	<ItemGroup  Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
@@ -24,5 +25,6 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
+		<None Include="README.md" Pack="true" PackagePath="\" Condition="Exists('$(MSBuildProjectDirectory)\README.md')" />
 	</ItemGroup>
 </Project>
