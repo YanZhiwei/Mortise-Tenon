@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Tenon.Serialization.Abstractions;
 using SystemJsonSerializer = System.Text.Json.JsonSerializer;
@@ -23,7 +24,9 @@ public sealed class SystemTextJsonSerializer(JsonSerializerOptions? jsonSerializ
             ReadCommentHandling = JsonCommentHandling.Skip,
             PropertyNameCaseInsensitive = true,
             DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            WriteIndented = true
         };
     }
 
