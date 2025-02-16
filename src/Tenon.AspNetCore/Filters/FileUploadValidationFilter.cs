@@ -51,6 +51,14 @@ public class FileUploadValidationFilter : IAsyncActionFilter
 
     private static IEnumerable<IFormFile> ExtractFilesFromContext(ActionExecutingContext context)
     {
+        var request = context?.HttpContext?.Request;
+        if (request?.HasFormContentType == true)
+        {
+            var formFiles = request?.Form?.Files;
+            if (formFiles?.Any() ?? false)
+                return formFiles;
+        }
+
         return context.ActionArguments.Values
             .OfType<IFormFile>()
             .Concat(context.ActionArguments.Values
